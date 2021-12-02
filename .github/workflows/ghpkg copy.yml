@@ -1,0 +1,25 @@
+name: Node.js Package
+on:
+  push:
+    branches: 
+      - feature/ghpkg
+  release:
+    types: [created]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: npm install
+      - uses: actions/setup-node@v2
+        with:
+          registry-url: 'https://npm.pkg.github.com'
+          node-version: '12.x'
+          # Defaults to the user or organization that owns the workflow file
+          scope: '@botoom'
+      # Publish to GitHub Packages
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      
