@@ -14,8 +14,8 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           registry-url: 'https://npm.pkg.github.com'
+          node-version: '12.x'
           # Defaults to the user or organization that owns the workflow file
-          scope: '@botoom'
       # Publish to GitHub Packages
       - run: echo procesando
       - run: npm publish --access public
