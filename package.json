@@ -1,6 +1,6 @@
 {
   "name": "@botom/quill-resize-module",
-  "version": "1.1.1",
+  "version": "2.0.0",
   "main": "./dist/quill-resize-module.js",
   "typings": "types/main.d.ts",
   "author": {
@@ -11,6 +11,7 @@
     "type": "git",
     "url": "https://github.com/BOTOOM/quill-resize-module.git"
   },
+  "bugs": "https://github.com/BOTOOM/quill-resize-module/issues",
   "license": "MIT",
   "keywords": [
     "quill",
