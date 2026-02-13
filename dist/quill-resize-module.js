@@ -386,3 +386,4 @@
     return QuillResizeModule;
 
 }));
+//# sourceMappingURL=quill-resize-module.js.map
