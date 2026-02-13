@@ -140,6 +140,7 @@ class ResizePlugin {
       }
     }
   }
+
   bindEvents() {
     if (this.resizer !== null) {
       this.resizer.addEventListener("mousedown", this.startResize);

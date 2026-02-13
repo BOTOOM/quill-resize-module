@@ -13,6 +13,51 @@ interface QuillResizeModuleOptions {
   [index: string]: any;
 }
 
+function isYouTubeUrl(url: string): boolean {
+  return /(?:youtube\.com|youtu\.be)/i.test(url);
+}
+
+function extractYouTubeVideoId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=)([\w-]{11})/i,
+    /(?:youtube\.com\/embed\/)([\w-]{11})/i,
+    /(?:youtu\.be\/)([\w-]{11})/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = pattern.exec(url);
+    if (match?.[1]) {
+      return match[1];
+    }
+  }
+
+  return null;
+}
+
+function normalizeYouTubeIframe(iframe: HTMLIFrameElement) {
+  const src = iframe.getAttribute("src") || "";
+  if (!isYouTubeUrl(src)) {
+    return;
+  }
+
+  const videoId = extractYouTubeVideoId(src);
+  if (!videoId) {
+    return;
+  }
+
+  const origin = encodeURIComponent(globalThis.location.origin);
+  const normalizedSrc =
+    `https://www.youtube.com/embed/${videoId}` +
+    `?enablejsapi=1&playsinline=1&origin=${origin}&rel=0`;
+
+  if (iframe.src !== normalizedSrc) {
+    iframe.src = normalizedSrc;
+  }
+
+  iframe.referrerPolicy = "strict-origin-when-cross-origin";
+  iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+}
+
 function QuillResizeModule(quill: Quill, options?: QuillResizeModuleOptions) {
   const container: HTMLElement = quill.root as HTMLElement;
   let resizeTarge: HTMLElement | null;
@@ -32,6 +77,8 @@ function QuillResizeModule(quill: Quill, options?: QuillResizeModuleOptions) {
   quill.on("text-change", (delta: any, source: string) => {
     // iframe 大小调整
     container.querySelectorAll("iframe").forEach((item: HTMLIFrameElement) => {
+      normalizeYouTubeIframe(item);
+
       IframeOnClick.track(item, () => {
         resizeTarge = item;
         resizePlugin = new ResizePlugin(
