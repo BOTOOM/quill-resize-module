@@ -108,8 +108,18 @@ class ResizePlugin {
   }
   positionResizerToTarget(el: HTMLElement) {
     if (this.resizer !== null) {
-      this.resizer.style.setProperty("left", el.offsetLeft + "px");
-      this.resizer.style.setProperty("top", el.offsetTop + "px");
+      let currentEl = el
+      let offsetLeft = el.offsetLeft
+      let offsetTop = el.offsetTop
+
+      while (currentEl && currentEl.offsetParent != this.resizer.parentElement) {
+        currentEl = currentEl.offsetParent
+        offsetLeft += currentEl.offsetLeft
+        offsetTop += currentEl.offsetTop
+      }
+
+      this.resizer.style.setProperty("left", offsetLeft + "px");
+      this.resizer.style.setProperty("top", offsetTop + "px");
       this.resizer.style.setProperty("width", el.clientWidth + "px");
       this.resizer.style.setProperty("height", el.clientHeight + "px");
       // this.resizer.getElementsByTagName("ql-size").item(0)?.innerHTML = `450px, 500px`

@@ -1,0 +1,16 @@
+{
+  "types": [
+    { "type": "feat", "section": "Features" },
+    { "type": "fix", "section": "Bug Fixes" },
+    { "type": "build", "section": "Build Changes" },
+    { "type": "chore", "hidden": true },
+    { "type": "docs", "hidden": true },
+    { "type": "style", "hidden": true },
+    { "type": "refactor", "hidden": true },
+    { "type": "perf", "hidden": true },
+    { "type": "test", "hidden": true }
+  ],
+  "commitUrlFormat": "https://github.com/BOTOOM/quill-resize-module/commit/{{hash}}",
+  "compareUrlFormat": "https://github.com/BOTOOM/quill-resize-module/compare/{{previousTag}}...{{currentTag}}",
+  "issueUrlFormat": "https://github.com/BOTOOM/quill-resize-module/issues/{{id}}"
+}

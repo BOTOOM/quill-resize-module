@@ -1,16 +1,17 @@
 {
   "name": "@botom/quill-resize-module",
-  "version": "1.1.1",
+  "version": "2.0.1",
   "main": "./dist/quill-resize-module.js",
   "typings": "types/main.d.ts",
   "author": {
-    "email": "ediaz@teravisiontech.com",
+    "email": "edwardiaz.dev@gmail.com",
     "name": "Edwar Diaz"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/BOTOOM/quill-resize-module.git"
+    "url": "git+https://github.com/BOTOOM/quill-resize-module.git"
   },
+  "bugs": "https://github.com/BOTOOM/quill-resize-module/issues",
   "license": "MIT",
   "keywords": [
     "quill",
@@ -19,15 +20,17 @@
     "quill-video-resize",
     "quill-iframe-resize"
   ],
-  "dependencies": {},
   "devDependencies": {
+    "@commitlint/cli": "^18.2.0",
+    "@commitlint/config-conventional": "^18.1.0",
     "@types/ms": "^0.7.30",
     "rollup": "^1.0.0",
-    "rollup-plugin-commonjs": "^9.2.0",
-    "rollup-plugin-less": "^1.1.2",
+    "rollup-plugin-commonjs": "^9.3.4",
+    "rollup-plugin-less": "^1.1.3",
     "rollup-plugin-node-resolve": "^4.0.0",
-    "rollup-plugin-typescript": "^1.0.0",
+    "rollup-plugin-typescript": "^1.0.1",
     "rollup-plugin-uglify": "^6.0.4",
+    "standard-version": "^9.5.0",
     "ts-node": "^7.0.1",
     "tslib": "^1.9.3",
     "typescript": "^3.2.2"
@@ -36,12 +39,14 @@
     "build": "rollup -c",
     "dev": "rollup -c -w",
     "test": "ts-node test/test.ts",
-    "pretest": "npm run build"
+    "pretest": "npm run build",
+    "release": "standard-version",
+    "release:minor": "standard-version --release-as minor",
+    "release:patch": "standard-version --release-as patch",
+    "release:major": "standard-version --release-as major"
   },
   "files": [
-    "src",
     "dist/*.js",
-    "types/*.d.ts",
-    "demo"
+    "types/*.d.ts"
   ]
 }
