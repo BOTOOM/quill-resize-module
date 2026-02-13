@@ -17,12 +17,30 @@
     position: absolute;
     top: -3em;
     left: 50%;
+    min-width: 200px; /* Minimum width for small objects */
+    max-width: 400px; /* Maximum width for very small objects */
     padding: 0.5em;
     border: 1px solid #fff;
     border-radius: 3px;
     background-color: #fff;
     box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
     transform: translateX(-50%);
+    z-index: 1000;
+    white-space: normal; /* Allow text wrapping */
+    
+    /* Responsive positioning for very small objects */
+    &.small-object {
+      min-width: 250px;
+      top: -4em;
+    }
+    
+    &.very-small-object {
+      min-width: 300px;
+      top: -5em;
+      left: 0;
+      transform: none;
+    }
+    
     .group {
       display: flex;
       border: 1px solid #aaa;
@@ -30,26 +48,35 @@
       overflow: hidden;
       white-space: nowrap;
       text-align: center;
+      flex-wrap: wrap; /* Allow wrapping for very small objects */
+      
       &:not(:first-child) {
         margin-top: 0.5em;
       }
+      
       .btn {
-        flex: 1 0 0;
+        flex: 1 0 auto; /* Allow buttons to shrink */
+        min-width: 40px; /* Minimum button width */
         text-align: center;
-        width: 25%;
-        padding: 0 0.5rem;
+        padding: 0 0.3rem; /* Reduced padding */
         display: inline-block;
         color: rgba(0, 0, 0, 0.65);
         vertical-align: top;
-        line-height: 2;
+        line-height: 1.8; /* Slightly reduced line height */
         user-select: none;
+        font-size: 0.85em; /* Smaller font for tight spaces */
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        
         &.btn-group {
           padding: 0;
           display: inline-flex;
-          line-height: 2em;
+          line-height: 1.8em;
+          min-width: 60px;
           .inner-btn {
             flex: 1 0 0;
-            font-size: 2em;
+            font-size: 1.5em; /* Smaller icons */
             width: 50%;
             cursor: pointer;
             &:first-child {
@@ -60,14 +87,85 @@
             }
           }
         }
+        
         &:not(:last-child) {
           border-right: 1px solid #bbb;
         }
+        
         &:not(.btn-group):active {
           background-color: rgba(0, 0, 0, 0.1);
         }
+        
+        /* Tooltip for truncated text */
+        &:hover {
+          position: relative;
+          &::after {
+            content: attr(data-full-text);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 1001;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+          }
+          
+          &:hover::after {
+            opacity: 1;
+          }
+        }
       }
       
+      /* Input wrapper improvements */
+      .input-wrapper {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        min-width: 60px;
+        flex: 1 0 auto;
+        
+        input {
+          width: 40px;
+          text-align: center;
+          border: 1px solid #ddd;
+          border-radius: 2px;
+          padding: 2px 4px;
+          font-size: 0.85em;
+        }
+        
+        .suffix {
+          font-size: 0.75em;
+          margin-left: 2px;
+        }
+        
+        .tooltip {
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          background-color: #333;
+          color: white;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 11px;
+          white-space: nowrap;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.3s;
+          z-index: 1001;
+        }
+        
+        &:hover .tooltip {
+          opacity: 1;
+        }
+      }
     }
   }
   .last-item {
@@ -78,10 +176,11 @@
     top: 50%;
     left: 50%;
     padding: 0.1em;
-    border: 1px solid rgba(255, 255, 255, 0.8);;
+    border: 1px solid rgba(255, 255, 255, 0.8);
     border-radius: 2px;
     background-color: rgba(255, 255, 255, 0.8);
     box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
     transform: translateX(-50%);
+    font-size: 0.8em; /* Smaller font for tight spaces */
   }
 }
