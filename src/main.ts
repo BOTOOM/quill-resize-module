@@ -8,9 +8,9 @@ interface Quill {
   on: any;
 }
 interface QuillResizeModuleOptions {
-  [index: string]: any;
   locale?: Locale;
-  toolbar: boolean;
+  onChange?: (element: HTMLElement) => void;
+  [index: string]: any;
 }
 
 function QuillResizeModule(quill: Quill, options?: QuillResizeModuleOptions) {

@@ -1,6 +1,6 @@
 import "./ResizePlugin.less";
 import { I18n, Locale, defaultLocale } from "./i18n";
-import { format } from "./utils";
+import { format, getScrollParent } from "./utils";
 
 interface Size {
   width: number;
@@ -14,27 +14,38 @@ interface Position {
 }
 class ResizeElement extends HTMLElement {
   public originSize?: Size | null = null;
+  [key: string]: any;
 }
 
 interface ResizePluginOption {
-  showToolbar?: boolean;
   locale?: Locale;
-  showSize?: boolean;
-  toolbar?: {
-    alingTools?: boolean;
-    sizeTools?: boolean;
-  };
+  onChange?: (element: HTMLElement) => void;
+  [index: string]: any;
 }
-
-let templateUsed: string;
-let pluginOptions: ResizePluginOption | undefined;
-
+const template = `
+<div class="handler" title="{0}"></div>
+<div class="toolbar">
+  <div class="group">
+    <a class="btn" data-type="width" data-styles="width:100%">100%</a>
+    <a class="btn" data-type="width" data-styles="width:50%">50%</a>
+    <span class="input-wrapper"><input data-type="width" maxlength="3" /><span class="suffix">%</span><span class="tooltip">{5}</span></span>
+    <a class="btn" data-type="width" data-styles="width:auto; height:auto;">{4}</a>
+  </div>
+  <div class="group">
+    <a class="btn" data-type="align" data-styles="float:left">{1}</a>
+    <a class="btn" data-type="align" data-styles="display:block;margin:auto;">{2}</a>
+    <a class="btn" data-type="align" data-styles="float:right;">{3}</a>
+    <a class="btn" data-type="align" data-styles="">{4}</a>
+  </div>
+</div>
+`;
 class ResizePlugin {
   resizeTarget: ResizeElement;
   resizer: HTMLElement | null = null;
   container: HTMLElement;
   startResizePosition: Position | null = null;
   i18n: I18n;
+  options: any;
 
   constructor(
     resizeTarget: ResizeElement,
@@ -42,7 +53,7 @@ class ResizePlugin {
     options?: ResizePluginOption
   ) {
     this.i18n = new I18n(options?.locale || defaultLocale);
-    templateUsed = this.createToobar(options);
+    this.options = options;
     this.resizeTarget = resizeTarget;
     if (!resizeTarget.originSize) {
       resizeTarget.originSize = {
@@ -50,14 +61,16 @@ class ResizePlugin {
         height: resizeTarget.clientHeight,
       };
     }
-    pluginOptions = options;
+
     this.container = container;
     this.initResizer();
     this.positionResizerToTarget(resizeTarget);
+
     this.resizing = this.resizing.bind(this);
     this.endResize = this.endResize.bind(this);
     this.startResize = this.startResize.bind(this);
     this.toolbarClick = this.toolbarClick.bind(this);
+    this.toolbarInputChange = this.toolbarInputChange.bind(this);
     this.bindEvents();
   }
 
@@ -68,126 +81,105 @@ class ResizePlugin {
       resizer = document.createElement("div");
       resizer.setAttribute("id", "editor-resizer");
       resizer.innerHTML = format(
-        templateUsed,
+        template,
         this.i18n.findLabel("altTip"),
         this.i18n.findLabel("floatLeft"),
         this.i18n.findLabel("center"),
         this.i18n.findLabel("floatRight"),
-        this.i18n.findLabel("restore")
+        this.i18n.findLabel("restore"),
+        this.i18n.findLabel("inputTip")
       );
       this.container.appendChild(resizer);
     }
     this.resizer = resizer;
   }
-  createToobar(options?: ResizePluginOption) {
-    const templateBasicToolbar = `<div class="handler" title="{0}"></div>`;
-    const size = `<div class="showSize" name="ql-size" title="{0}">{size}</div>`;
-
-    const sizeTools = `<div class="group">
-      <a class="btn" data-width="100%">100%</a>
-      <a class="btn" data-width="50%">50%</a>
-      <a  class="btn btn-group">
-      <span data-width="-5" class="inner-btn">﹣</span>
-      <span data-width="5" class="inner-btn">﹢</span>
-      </a>
-      <a data-width="auto" class="btn last-item">{4}</a>
-      </div>`;
-    const alingTools = `<div class="group">
-      <a class="btn" data-float="left">{1}</a>
-      <a class="btn" data-float="center">{2}</a>
-      <a class="btn" data-float="right">{3}</a>
-      <a data-float="none" class="btn last-item">{4}</a>
-      </div>`;
-    const toolBarTemplate = `<div class="toolbar">
-    ${options?.toolbar?.sizeTools !== false ? sizeTools : ""}
-    ${options?.toolbar?.alingTools !== false ? alingTools : ""}
-  </div>`;
-    return `${templateBasicToolbar}${options?.showSize === true ? size : ""}${
-      options?.showToolbar !== false ? toolBarTemplate : ""
-    }`;
-  }
   positionResizerToTarget(el: HTMLElement) {
     if (this.resizer !== null) {
-      let currentEl = el
-      let offsetLeft = el.offsetLeft
-      let offsetTop = el.offsetTop
-
-      while (currentEl && currentEl.offsetParent != this.resizer.parentElement) {
-        currentEl = currentEl.offsetParent
-        offsetLeft += currentEl.offsetLeft
-        offsetTop += currentEl.offsetTop
+      // Check if element is contentEditable before proceeding
+      if (!el.isContentEditable) {
+        return;
       }
 
-      this.resizer.style.setProperty("left", offsetLeft + "px");
-      this.resizer.style.setProperty("top", offsetTop + "px");
+      // Use getBoundingClientRect for more accurate positioning
+      const containerRect = this.container.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      
+      this.resizer.style.setProperty(
+        "left",
+        elRect.left - containerRect.left + "px"
+      );
+      this.resizer.style.setProperty(
+        "top",
+        elRect.top - containerRect.top + "px"
+      );
+
       this.resizer.style.setProperty("width", el.clientWidth + "px");
       this.resizer.style.setProperty("height", el.clientHeight + "px");
-      // this.resizer.getElementsByTagName("ql-size").item(0)?.innerHTML = `450px, 500px`
-      pluginOptions?.showSize &&
-        (document.getElementsByName("ql-size").item(0).innerHTML = `${
-          el.getAttribute("width") ? el.getAttribute("width") : el.clientWidth
-        }, ${
-          el.getAttribute("height")
-            ? el.getAttribute("height")
-            : el.clientHeight
-        }`);
-      // this.resizer.innerHTML = formatSize (templateUsed, "450px, 500px")
+      
+      // Add responsive classes based on element size
+      const toolbar = this.resizer.querySelector('.toolbar') as HTMLElement;
+      if (toolbar) {
+        // Remove existing responsive classes
+        toolbar.classList.remove('small-object', 'very-small-object');
+        
+        // Add appropriate class based on width
+        if (el.clientWidth < 150) {
+          toolbar.classList.add('very-small-object');
+        } else if (el.clientWidth < 250) {
+          toolbar.classList.add('small-object');
+        }
+        
+        // Add data-full-text attributes for tooltips
+        const buttons = toolbar.querySelectorAll('.btn');
+        buttons.forEach(btn => {
+          const button = btn as HTMLElement;
+          if (button.scrollWidth > button.clientWidth) {
+            button.dataset.fullText = button.textContent || '';
+          }
+        });
+      }
     }
   }
   bindEvents() {
     if (this.resizer !== null) {
       this.resizer.addEventListener("mousedown", this.startResize);
       this.resizer.addEventListener("click", this.toolbarClick);
+      this.resizer.addEventListener("change", this.toolbarInputChange);
     }
     window.addEventListener("mouseup", this.endResize);
     window.addEventListener("mousemove", this.resizing);
+
+    // Add scroll parent detection for better positioning
+    getScrollParent(this.resizeTarget)?.addEventListener("scroll", () => {
+      this.positionResizerToTarget(this.resizeTarget);
+    });
+  }
+  _setStylesForToolbar(type: string, styles: string | undefined) {
+    const storeKey = `_styles_${type}`;
+    const style: CSSStyleDeclaration = this.resizeTarget.style;
+    const originStyles = this.resizeTarget[storeKey];
+    style.cssText =
+      style.cssText.replaceAll(" ", "").replace(originStyles, "") +
+      `;${styles}`;
+    this.resizeTarget[storeKey] = styles;
+
+    this.positionResizerToTarget(this.resizeTarget);
+    this.options?.onChange(this.resizeTarget);
+  }
+  toolbarInputChange(e: Event) {
+    const target: HTMLInputElement = e.target as HTMLInputElement;
+    const type = target?.dataset?.type;
+    const value = target.value;
+    if (type && Number(value)) {
+      this._setStylesForToolbar(type, `width: ${Number(value)}%;`);
+    }
   }
   toolbarClick(e: MouseEvent) {
     const target: HTMLElement = e.target as HTMLElement;
-    if (
-      target.classList.contains("btn") ||
-      target.classList.contains("inner-btn")
-    ) {
-      let width: string | number = target.dataset.width as string;
-      const float: string = target.dataset.float as string;
-      const style: CSSStyleDeclaration = this.resizeTarget.style;
-      if (width) {
-        if (this.resizeTarget.tagName.toLowerCase() !== "iframe") {
-          // style.removeProperty("height");
-          this.resizeTarget.removeAttribute("height");
-        }
-        if (width === "auto") {
-          // style.removeProperty("width");
-          this.resizeTarget.removeAttribute("width");
-        } else if (width.includes("%")) {
-          this.resizeTarget.setAttribute("width", width);
-          // style.setProperty("width", width);
-        } else {
-          let styleWidth = this.resizeTarget.getAttribute("width") || "";
-          // let styleWidth = style.getPropertyValue("width");
-          width = parseInt(width);
-          if (styleWidth.includes("%")) {
-            styleWidth =
-              Math.min(Math.max(parseInt(styleWidth) + width, 5), 100) + "%";
-          } else {
-            styleWidth =
-              Math.max(this.resizeTarget.clientWidth + width, 10) + "px";
-          }
-          this.resizeTarget.setAttribute("width", styleWidth);
-          // style.setProperty("width", styleWidth);
-        }
-      } else {
-        if (float === "center") {
-          style.setProperty("display", "block");
-          style.setProperty("margin", "auto");
-          style.removeProperty("float");
-        } else {
-          style.removeProperty("display");
-          style.removeProperty("margin");
-          style.setProperty("float", float);
-        }
-      }
-      this.positionResizerToTarget(this.resizeTarget);
+    const type = target?.dataset?.type;
+
+    if (type && target.classList.contains("btn")) {
+      this._setStylesForToolbar(type, target?.dataset?.styles);
     }
   }
   startResize(e: MouseEvent) {
@@ -203,6 +195,7 @@ class ResizePlugin {
   }
   endResize() {
     this.startResizePosition = null;
+    this.options?.onChange(this.resizeTarget);
   }
   resizing(e: MouseEvent) {
     if (!this.startResizePosition) return;
@@ -218,8 +211,9 @@ class ResizePlugin {
       const rate: number = originSize.height / originSize.width;
       height = rate * width;
     }
-    this.resizeTarget.setAttribute("width", Math.max(width, 30) + "");
-    this.resizeTarget.setAttribute("height", Math.max(height, 30) + "");
+
+    this.resizeTarget.style.setProperty("width", Math.max(width, 30) + "px");
+    this.resizeTarget.style.setProperty("height", Math.max(height, 30) + "px");
     this.positionResizerToTarget(this.resizeTarget);
   }
 

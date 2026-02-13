@@ -12,15 +12,12 @@ interface Position {
 }
 declare class ResizeElement extends HTMLElement {
     originSize?: Size | null;
+    [key: string]: any;
 }
 interface ResizePluginOption {
-    showToolbar?: boolean;
     locale?: Locale;
-    showSize?: boolean;
-    toolbar?: {
-        alingTools?: boolean;
-        sizeTools?: boolean;
-    };
+    onChange?: (element: HTMLElement) => void;
+    [index: string]: any;
 }
 declare class ResizePlugin {
     resizeTarget: ResizeElement;
@@ -28,11 +25,13 @@ declare class ResizePlugin {
     container: HTMLElement;
     startResizePosition: Position | null;
     i18n: I18n;
+    options: any;
     constructor(resizeTarget: ResizeElement, container: HTMLElement, options?: ResizePluginOption);
     initResizer(): void;
-    createToobar(options?: ResizePluginOption): string;
     positionResizerToTarget(el: HTMLElement): void;
     bindEvents(): void;
+    _setStylesForToolbar(type: string, styles: string | undefined): void;
+    toolbarInputChange(e: Event): void;
     toolbarClick(e: MouseEvent): void;
     startResize(e: MouseEvent): void;
     endResize(): void;

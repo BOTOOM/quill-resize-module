@@ -5,9 +5,9 @@ interface Quill {
     on: any;
 }
 interface QuillResizeModuleOptions {
-    [index: string]: any;
     locale?: Locale;
-    toolbar: boolean;
+    onChange?: (element: HTMLElement) => void;
+    [index: string]: any;
 }
 declare function QuillResizeModule(quill: Quill, options?: QuillResizeModuleOptions): void;
 export default QuillResizeModule;

@@ -4,6 +4,7 @@ class Locale {
   floatRight?: string;
   center?: string;
   restore?: string;
+  inputTip?: string;
 }
 class I18n {
   config: Locale;
@@ -24,5 +25,6 @@ const defaultLocale: Locale = {
   floatRight: "Right",
   center: "Center",
   restore: "Restore",
+  inputTip: "Enter width percentage",
 };
 export { I18n, Locale, defaultLocale };
