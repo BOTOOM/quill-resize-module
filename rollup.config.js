@@ -1,8 +1,8 @@
-import resolve from "rollup-plugin-node-resolve";
-import commonjs from "rollup-plugin-commonjs";
-import typescript from "rollup-plugin-typescript";
-import { uglify } from "rollup-plugin-uglify";
-import less from "rollup-plugin-less";
+import { nodeResolve } from "@rollup/plugin-node-resolve";
+import commonjs from "@rollup/plugin-commonjs";
+import typescript from "@rollup/plugin-typescript";
+import terser from "@rollup/plugin-terser";
+import postcss from "rollup-plugin-postcss";
 export default [
   {
     input: "src/main.ts",
@@ -11,7 +11,7 @@ export default [
       file: "dist/quill-resize-module.js",
       format: "umd"
     },
-    plugins: [resolve(), commonjs(), typescript(), less({ insert: true })]
+    plugins: [nodeResolve(), commonjs(), typescript(), postcss({ inject: true })]
   },
   {
     input: "src/main.ts",
@@ -21,11 +21,11 @@ export default [
       format: "umd"
     },
     plugins: [
-      resolve(),
+      nodeResolve(),
       commonjs(),
       typescript(),
-      uglify(),
-      less({ insert: true })
+      terser(),
+      postcss({ inject: true })
     ]
   }
 ];
