@@ -1,10 +1,10 @@
-import { nodeResolve } from "@rollup/plugin-node-resolve";
-import commonjs from "@rollup/plugin-commonjs";
-import typescript from "@rollup/plugin-typescript";
-import terser from "@rollup/plugin-terser";
-import postcss from "rollup-plugin-postcss";
+const { nodeResolve } = require("@rollup/plugin-node-resolve");
+const commonjs = require("@rollup/plugin-commonjs");
+const typescript = require("@rollup/plugin-typescript");
+const terser = require("@rollup/plugin-terser");
+const postcss = require("rollup-plugin-postcss");
 
-export default [
+module.exports = [
   {
     input: "src/main.ts",
     output: {
@@ -20,6 +20,7 @@ export default [
       }),
       commonjs(),
       typescript({
+        tsconfig: "./tsconfig.rollup.json",
         declaration: false,
         sourceMap: true
       }),
@@ -44,6 +45,7 @@ export default [
       }),
       commonjs(),
       typescript({
+        tsconfig: "./tsconfig.rollup.json",
         declaration: false,
         sourceMap: false
       }),

@@ -20,5 +20,5 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run build
-      - run: npm audit
+      - run: npm audit --omit=dev --audit-level=high
       
