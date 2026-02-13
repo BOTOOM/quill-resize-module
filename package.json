@@ -59,16 +59,16 @@
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^9.2.6",
-    "@semantic-release/npm": "^11.0.2",
+    "@semantic-release/npm": "^13.1.4",
     "@types/ms": "^0.7.30",
     "@typescript-eslint/eslint-plugin": "^8.55.0",
     "@typescript-eslint/parser": "^8.55.0",
-    "bundlesize": "^0.18.2",
+    "@size-limit/file": "^11.2.0",
     "eslint": "^9.39.2",
     "less": "^4.5.1",
     "rollup": "^3.29.0",
     "rollup-plugin-postcss": "^4.0.2",
-    "semantic-release": "^23.0.2",
+    "semantic-release": "^25.0.3",
     "standard-version": "^9.5.0",
     "ts-node": "^10.9.0",
     "tslib": "^2.6.0",
@@ -83,7 +83,7 @@
     "test": "ts-node test/test.ts",
     "pretest": "npm run build",
     "prepublishOnly": "npm run build",
-    "size": "bundlesize",
+    "size": "size-limit",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "release": "standard-version",
@@ -98,10 +98,10 @@
     "CHANGELOG.md",
     "LICENSE"
   ],
-  "bundlesize": [
+  "size-limit": [
     {
       "path": "./dist/quill-resize-module.min.js",
-      "maxSize": "15 kB"
+      "limit": "15 kB"
     }
   ],
   "publishConfig": {
