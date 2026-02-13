@@ -1,48 +1,111 @@
 {
   "name": "@botom/quill-resize-module",
-  "version": "2.0.0",
-  "main": "./dist/quill-resize-module.js",
-  "typings": "types/main.d.ts",
+  "version": "2.0.1",
+  "description": "🔒 Secure & modern Quill.js module for resizing images, videos, and iframes with zero vulnerabilities and automatic releases",
+  "main": "./dist/quill-resize-module.min.js",
+  "module": "./dist/quill-resize-module.js",
+  "types": "./types/main.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/quill-resize-module.js",
+      "require": "./dist/quill-resize-module.min.js",
+      "types": "./types/main.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
   "author": {
-    "email": "ediaz@teravisiontech.com",
-    "name": "Edwar Diaz"
+    "name": "Edwar Diaz",
+    "email": "edwardiaz.dev@gmail.com",
+    "url": "https://github.com/BOTOOM"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/BOTOOM/quill-resize-module.git"
   },
-  "bugs": "https://github.com/BOTOOM/quill-resize-module/issues",
+  "bugs": {
+    "url": "https://github.com/BOTOOM/quill-resize-module/issues"
+  },
+  "homepage": "https://github.com/BOTOOM/quill-resize-module#readme",
   "license": "MIT",
   "keywords": [
     "quill",
-    "quill-resize-module",
-    "quill-image-resize",
-    "quill-video-resize",
-    "quill-iframe-resize"
+    "quill-editor",
+    "image-resize",
+    "video-resize",
+    "iframe-resize",
+    "quill-module",
+    "rich-text-editor",
+    "wysiwyg",
+    "editor-plugin",
+    "secure",
+    "modern",
+    "typescript",
+    "zero-vulnerabilities",
+    "semantic-release",
+    "auto-resize",
+    "drag-resize",
+    "responsive",
+    "accessibility",
+    "lightweight",
+    "performance"
   ],
-  "dependencies": {},
   "devDependencies": {
+    "@commitlint/cli": "^18.2.0",
+    "@commitlint/config-conventional": "^18.1.0",
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-node-resolve": "^15.2.0",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.0",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^9.2.6",
+    "@semantic-release/npm": "^13.1.4",
     "@types/ms": "^0.7.30",
-    "rollup": "^1.0.0",
-    "rollup-plugin-commonjs": "^9.2.0",
-    "rollup-plugin-less": "^1.1.2",
-    "rollup-plugin-node-resolve": "^4.0.0",
-    "rollup-plugin-typescript": "^1.0.0",
-    "rollup-plugin-uglify": "^6.0.4",
-    "ts-node": "^7.0.1",
-    "tslib": "^1.9.3",
-    "typescript": "^3.2.2"
+    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/parser": "^8.55.0",
+    "@size-limit/file": "^11.2.0",
+    "eslint": "^9.39.2",
+    "less": "^4.5.1",
+    "rollup": "^3.29.0",
+    "rollup-plugin-postcss": "^4.0.2",
+    "semantic-release": "^25.0.3",
+    "standard-version": "^9.5.0",
+    "ts-node": "^10.9.0",
+    "tslib": "^2.6.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
   },
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
     "test": "ts-node test/test.ts",
-    "pretest": "npm run build"
+    "pretest": "npm run build",
+    "prepublishOnly": "npm run build",
+    "size": "size-limit",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "release": "standard-version",
+    "release:minor": "standard-version --release-as minor",
+    "release:patch": "standard-version --release-as patch",
+    "release:major": "standard-version --release-as major"
   },
   "files": [
-    "src",
     "dist/*.js",
     "types/*.d.ts",
-    "demo"
-  ]
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "size-limit": [
+    {
+      "path": "./dist/quill-resize-module.min.js",
+      "limit": "15 kB"
+    }
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
 }

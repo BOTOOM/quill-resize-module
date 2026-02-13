@@ -1,31 +1,80 @@
-import resolve from "rollup-plugin-node-resolve";
-import commonjs from "rollup-plugin-commonjs";
-import typescript from "rollup-plugin-typescript";
-import { uglify } from "rollup-plugin-uglify";
-import less from "rollup-plugin-less";
-export default [
+const { nodeResolve } = require("@rollup/plugin-node-resolve");
+const commonjs = require("@rollup/plugin-commonjs");
+const typescript = require("@rollup/plugin-typescript");
+const terser = require("@rollup/plugin-terser");
+const postcss = require("rollup-plugin-postcss");
+
+module.exports = [
   {
     input: "src/main.ts",
     output: {
       name: "QuillResizeModule",
       file: "dist/quill-resize-module.js",
-      format: "umd"
+      format: "umd",
+      sourcemap: true
     },
-    plugins: [resolve(), commonjs(), typescript(), less({ insert: true })]
+    plugins: [
+      nodeResolve({ 
+        preferBuiltins: false,
+        browser: true 
+      }),
+      commonjs(),
+      typescript({
+        tsconfig: "./tsconfig.rollup.json",
+        declaration: false,
+        sourceMap: true
+      }),
+      postcss({ 
+        inject: true,
+        minimize: false
+      })
+    ]
   },
   {
     input: "src/main.ts",
     output: {
       name: "QuillResizeModule",
       file: "dist/quill-resize-module.min.js",
-      format: "umd"
+      format: "umd",
+      sourcemap: false
     },
     plugins: [
-      resolve(),
+      nodeResolve({ 
+        preferBuiltins: false,
+        browser: true 
+      }),
       commonjs(),
-      typescript(),
-      uglify(),
-      less({ insert: true })
+      typescript({
+        tsconfig: "./tsconfig.rollup.json",
+        declaration: false,
+        sourceMap: false
+      }),
+      terser({
+        compress: {
+          drop_console: true,
+          drop_debugger: true,
+          pure_funcs: ['console.log'],
+          passes: 2
+        },
+        mangle: {
+          properties: {
+            regex: /^_/
+          }
+        },
+        format: {
+          comments: false
+        }
+      }),
+      postcss({ 
+        inject: true,
+        minimize: {
+          preset: ['default', {
+            discardComments: { removeAll: true },
+            normalizeWhitespace: true,
+            minifySelectors: true
+          }]
+        }
+      })
     ]
   }
 ];

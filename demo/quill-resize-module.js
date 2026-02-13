@@ -357,42 +357,6 @@
         return IframeClick;
     }());
 
-    function isYouTubeUrl(url) {
-        return /(?:youtube\.com|youtu\.be)/i.test(url);
-    }
-    function extractYouTubeVideoId(url) {
-        var patterns = [
-            /(?:youtube\.com\/watch\?v=)([\w-]{11})/i,
-            /(?:youtube\.com\/embed\/)([\w-]{11})/i,
-            /(?:youtu\.be\/)([\w-]{11})/i,
-        ];
-        for (var _i = 0, patterns_1 = patterns; _i < patterns_1.length; _i++) {
-            var pattern = patterns_1[_i];
-            var match = pattern.exec(url);
-            if (match === null || match === void 0 ? void 0 : match[1]) {
-                return match[1];
-            }
-        }
-        return null;
-    }
-    function normalizeYouTubeIframe(iframe) {
-        var src = iframe.getAttribute("src") || "";
-        if (!isYouTubeUrl(src)) {
-            return;
-        }
-        var videoId = extractYouTubeVideoId(src);
-        if (!videoId) {
-            return;
-        }
-        var origin = encodeURIComponent(globalThis.location.origin);
-        var normalizedSrc = "https://www.youtube.com/embed/".concat(videoId) +
-            "?enablejsapi=1&playsinline=1&origin=".concat(origin, "&rel=0");
-        if (iframe.src !== normalizedSrc) {
-            iframe.src = normalizedSrc;
-        }
-        iframe.referrerPolicy = "strict-origin-when-cross-origin";
-        iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
-    }
     function QuillResizeModule(quill, options) {
         var container = quill.root;
         var resizeTarge;
@@ -407,7 +371,6 @@
         quill.on("text-change", function (delta, source) {
             // iframe 大小调整
             container.querySelectorAll("iframe").forEach(function (item) {
-                normalizeYouTubeIframe(item);
                 IframeClick.track(item, function () {
                     resizeTarge = item;
                     resizePlugin = new ResizePlugin(item, container.parentElement, options);
