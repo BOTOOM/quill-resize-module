@@ -75,6 +75,19 @@ describe("QuillResizeModule", () => {
     expect(wrapper.querySelector("#editor-resizer")).not.toBeNull();
   });
 
+  it("propagates onSelect through to the module-level API when an img is clicked", () => {
+    const { root } = createEditor();
+    const img = document.createElement("img");
+    root.appendChild(img);
+    const quill = createQuillMock(root);
+    const onSelect = vi.fn();
+
+    QuillResizeModule(quill, { onSelect });
+    img.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(onSelect).toHaveBeenCalledWith(img);
+  });
+
   it("ignores clicks on elements that are not img/video", () => {
     const { wrapper, root } = createEditor();
     const paragraph = document.createElement("p");

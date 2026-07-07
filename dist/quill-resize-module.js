@@ -362,7 +362,7 @@
     var ResizePlugin = /** @class */ (function () {
         function ResizePlugin(resizeTarget, container, options) {
             var _this = this;
-            var _a, _b, _c, _d;
+            var _a, _b, _c, _d, _e, _f;
             this.resizer = null;
             this.startResizePosition = null;
             this.scrollParent = null;
@@ -394,7 +394,22 @@
             if (((_a = this.options) === null || _a === void 0 ? void 0 : _a.__autoFocus) !== false) {
                 (_d = (_c = (_b = this.resizer) === null || _b === void 0 ? void 0 : _b.querySelector(".handler")) === null || _c === void 0 ? void 0 : _c.focus) === null || _d === void 0 ? void 0 : _d.call(_c, { preventScroll: true });
             }
+            (_f = (_e = this.options) === null || _e === void 0 ? void 0 : _e.onSelect) === null || _f === void 0 ? void 0 : _f.call(_e, resizeTarget);
         }
+        /**
+         * Builds the typed payload passed to onResize/onAlignChange, reading the
+         * target's current width/height/align directly from the DOM so it always
+         * reflects the latest state (including changes made outside this class).
+         */
+        ResizePlugin.prototype._buildChangeEvent = function () {
+            var _a;
+            return {
+                target: this.resizeTarget,
+                width: this.resizeTarget.clientWidth,
+                height: this.resizeTarget.clientHeight,
+                align: (_a = readAlignValue(this.resizeTarget)) !== null && _a !== void 0 ? _a : null,
+            };
+        };
         ResizePlugin.prototype.initResizer = function () {
             var resizer = this.container.querySelector("#editor-resizer");
             if (!resizer) {
@@ -519,7 +534,7 @@
          *    code path instead of duplicating close/cleanup logic here.
          */
         ResizePlugin.prototype.onKeyDown = function (e) {
-            var _a, _b;
+            var _a, _b, _c, _d, _e, _f, _g, _h;
             var target = e.target;
             if (!target.classList.contains("handler")) {
                 return;
@@ -557,10 +572,16 @@
             this.resizeTarget.style.setProperty("height", Math.max(height, 30) + "px");
             this.positionResizerToTarget(this.resizeTarget);
             this._syncPersistence();
-            (_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.onChange) === null || _b === void 0 ? void 0 : _b.call(_a, this.resizeTarget);
+            // Each keystroke is a complete, atomic resize gesture (there's no
+            // natural discrete "gesture end" signal for individual keypresses like
+            // there is for pointer drags), so start/resize/end all fire together.
+            (_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.onResizeStart) === null || _b === void 0 ? void 0 : _b.call(_a, this.resizeTarget);
+            (_d = (_c = this.options) === null || _c === void 0 ? void 0 : _c.onResize) === null || _d === void 0 ? void 0 : _d.call(_c, this.resizeTarget, this._buildChangeEvent());
+            (_f = (_e = this.options) === null || _e === void 0 ? void 0 : _e.onResizeEnd) === null || _f === void 0 ? void 0 : _f.call(_e, this.resizeTarget);
+            (_h = (_g = this.options) === null || _g === void 0 ? void 0 : _g.onChange) === null || _h === void 0 ? void 0 : _h.call(_g, this.resizeTarget);
         };
         ResizePlugin.prototype._setStylesForToolbar = function (type, styles) {
-            var _a, _b;
+            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
             var storeKey = "_styles_".concat(type);
             var style = this.resizeTarget.style;
             var originStyles = this.resizeTarget[storeKey];
@@ -570,7 +591,18 @@
             this.resizeTarget[storeKey] = styles;
             this.positionResizerToTarget(this.resizeTarget);
             this._syncPersistence();
-            (_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.onChange) === null || _b === void 0 ? void 0 : _b.call(_a, this.resizeTarget);
+            if (type === "align") {
+                (_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.onAlignChange) === null || _b === void 0 ? void 0 : _b.call(_a, this.resizeTarget, (_c = readAlignValue(this.resizeTarget)) !== null && _c !== void 0 ? _c : null);
+            }
+            else {
+                // Toolbar-driven width changes (presets or restore) are a discrete
+                // resize with no separate "in progress" state, so start/resize/end
+                // all fire together, mirroring the keyboard-shortcut resize below.
+                (_e = (_d = this.options) === null || _d === void 0 ? void 0 : _d.onResizeStart) === null || _e === void 0 ? void 0 : _e.call(_d, this.resizeTarget);
+                (_g = (_f = this.options) === null || _f === void 0 ? void 0 : _f.onResize) === null || _g === void 0 ? void 0 : _g.call(_f, this.resizeTarget, this._buildChangeEvent());
+                (_j = (_h = this.options) === null || _h === void 0 ? void 0 : _h.onResizeEnd) === null || _j === void 0 ? void 0 : _j.call(_h, this.resizeTarget);
+            }
+            (_l = (_k = this.options) === null || _k === void 0 ? void 0 : _k.onChange) === null || _l === void 0 ? void 0 : _l.call(_k, this.resizeTarget);
         };
         /**
          * Persists the current width/height/align inline styles into the Quill
@@ -603,6 +635,7 @@
             }
         };
         ResizePlugin.prototype.startResize = function (e) {
+            var _a, _b;
             var target = e.target;
             // `button === 0` matches both the primary mouse button and the primary
             // contact point for touch/pen pointers (their `button` is 0 on
@@ -624,10 +657,11 @@
                 if (typeof target.setPointerCapture === "function") {
                     target.setPointerCapture(e.pointerId);
                 }
+                (_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.onResizeStart) === null || _b === void 0 ? void 0 : _b.call(_a, this.resizeTarget);
             }
         };
         ResizePlugin.prototype.endResize = function (e) {
-            var _a, _b, _c;
+            var _a, _b, _c, _d, _e;
             var wasResizing = this.startResizePosition !== null;
             this.startResizePosition = null;
             if (e &&
@@ -636,7 +670,7 @@
                 try {
                     e.target.releasePointerCapture(this.activePointerId);
                 }
-                catch (_d) {
+                catch (_f) {
                     // Ignore — capture may already have been released by the browser
                     // (e.g. on pointercancel) before we get here.
                 }
@@ -644,10 +678,12 @@
             this.activePointerId = null;
             if (wasResizing) {
                 this._syncPersistence();
+                (_c = (_b = this.options) === null || _b === void 0 ? void 0 : _b.onResizeEnd) === null || _c === void 0 ? void 0 : _c.call(_b, this.resizeTarget);
             }
-            (_c = (_b = this.options) === null || _b === void 0 ? void 0 : _b.onChange) === null || _c === void 0 ? void 0 : _c.call(_b, this.resizeTarget);
+            (_e = (_d = this.options) === null || _d === void 0 ? void 0 : _d.onChange) === null || _e === void 0 ? void 0 : _e.call(_d, this.resizeTarget);
         };
         ResizePlugin.prototype.resizing = function (e) {
+            var _a, _b;
             if (!this.startResizePosition)
                 return;
             var deltaX = e.clientX - this.startResizePosition.left;
@@ -664,6 +700,7 @@
             this.resizeTarget.style.setProperty("width", Math.max(width, 30) + "px");
             this.resizeTarget.style.setProperty("height", Math.max(height, 30) + "px");
             this.positionResizerToTarget(this.resizeTarget);
+            (_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.onResize) === null || _b === void 0 ? void 0 : _b.call(_a, this.resizeTarget, this._buildChangeEvent());
         };
         ResizePlugin.prototype.destroy = function () {
             var _a;

@@ -690,4 +690,140 @@ describe("ResizePlugin", () => {
       expect(target.style.width).toBe("");
     });
   });
+
+  describe("public callbacks", () => {
+    it("calls onSelect once when the overlay activates for a target", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      const onSelect = vi.fn();
+
+      createPlugin(target, container, { onSelect });
+
+      expect(onSelect).toHaveBeenCalledTimes(1);
+      expect(onSelect).toHaveBeenCalledWith(target);
+    });
+
+    it("fires onResizeStart, onResize and onResizeEnd in order during a pointer drag", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      stubGeometry(target, { width: 100, height: 80 });
+      const calls: string[] = [];
+      const onResizeStart = vi.fn(() => calls.push("start"));
+      const onResize = vi.fn(() => calls.push("resize"));
+      const onResizeEnd = vi.fn(() => calls.push("end"));
+
+      const plugin = createPlugin(target, container, {
+        onResizeStart,
+        onResize,
+        onResizeEnd,
+      });
+      const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
+
+      handler.dispatchEvent(leftButtonPointerDown({ clientX: 0, clientY: 0 }));
+      window.dispatchEvent(
+        new PointerEvent("pointermove", { clientX: 40, clientY: 20 })
+      );
+      window.dispatchEvent(new PointerEvent("pointerup"));
+
+      expect(calls).toEqual(["start", "resize", "end"]);
+      expect(onResizeStart).toHaveBeenCalledWith(target);
+      expect(onResizeEnd).toHaveBeenCalledWith(target);
+      const [, event] = onResize.mock.calls[0];
+      expect(event.target).toBe(target);
+      expect(event).toHaveProperty("width");
+      expect(event).toHaveProperty("height");
+      expect(event).toHaveProperty("align");
+    });
+
+    it("does not fire onResizeEnd when a pointerup happens without an active drag", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      const onResizeEnd = vi.fn();
+      const onChange = vi.fn();
+
+      createPlugin(target, container, { onResizeEnd, onChange });
+      window.dispatchEvent(new PointerEvent("pointerup"));
+
+      expect(onResizeEnd).not.toHaveBeenCalled();
+      // onChange keeps its pre-existing (unconditional) behavior.
+      expect(onChange).toHaveBeenCalledWith(target);
+    });
+
+    it("fires onAlignChange (not onResizeStart/onResize/onResizeEnd) on an align toolbar click", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      const onAlignChange = vi.fn();
+      const onResizeStart = vi.fn();
+      const onChange = vi.fn();
+
+      const plugin = createPlugin(target, container, {
+        onAlignChange,
+        onResizeStart,
+        onChange,
+      });
+      const leftBtn = plugin.resizer?.querySelector(
+        '.btn[data-type="align"][data-styles="float:left"]'
+      ) as HTMLElement;
+      leftBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(onAlignChange).toHaveBeenCalledWith(target, "left");
+      expect(onResizeStart).not.toHaveBeenCalled();
+      expect(onChange).toHaveBeenCalledWith(target);
+    });
+
+    it("fires onResizeStart/onResize/onResizeEnd (not onAlignChange) on a width toolbar click", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      const onAlignChange = vi.fn();
+      const onResizeStart = vi.fn();
+      const onResize = vi.fn();
+      const onResizeEnd = vi.fn();
+
+      const plugin = createPlugin(target, container, {
+        onAlignChange,
+        onResizeStart,
+        onResize,
+        onResizeEnd,
+      });
+      const button = plugin.resizer?.querySelector(
+        '.btn[data-styles="width:50%"]'
+      ) as HTMLElement;
+      button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(onResizeStart).toHaveBeenCalledWith(target);
+      expect(onResize).toHaveBeenCalledTimes(1);
+      expect(onResizeEnd).toHaveBeenCalledWith(target);
+      expect(onAlignChange).not.toHaveBeenCalled();
+    });
+
+    it("bundles onResizeStart/onResize/onResizeEnd for a single keyboard arrow step", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      stubGeometry(target, { width: 100, height: 80 });
+      const onResizeStart = vi.fn();
+      const onResize = vi.fn();
+      const onResizeEnd = vi.fn();
+
+      const plugin = createPlugin(target, container, {
+        onResizeStart,
+        onResize,
+        onResizeEnd,
+      });
+      const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
+
+      handler.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })
+      );
+
+      expect(onResizeStart).toHaveBeenCalledTimes(1);
+      expect(onResize).toHaveBeenCalledTimes(1);
+      expect(onResizeEnd).toHaveBeenCalledTimes(1);
+    });
+  });
 });

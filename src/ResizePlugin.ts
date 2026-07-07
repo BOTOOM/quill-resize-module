@@ -1,7 +1,7 @@
 import "./ResizePlugin.less";
 import { I18n, Locale, defaultLocale } from "./i18n";
 import { format, getScrollParent } from "./utils";
-import { syncResizeStateToQuill } from "./formats";
+import { syncResizeStateToQuill, readAlignValue, AlignValue } from "./formats";
 
 interface Size {
   width: number;
@@ -18,6 +18,18 @@ class ResizeElement extends HTMLElement {
   [key: string]: any;
 }
 
+/**
+ * Structured payload passed to the resize/align callbacks below, so
+ * consumers get typed width/height/align data instead of having to read
+ * `element.style` themselves.
+ */
+interface ResizeChangeEvent {
+  target: HTMLElement;
+  width: number;
+  height: number;
+  align: AlignValue | null;
+}
+
 interface ToolbarOptions {
   /** Show/hide the width/size buttons in the toolbar. Default: true. */
   sizeTools?: boolean;
@@ -32,7 +44,27 @@ interface ToolbarOptions {
 
 interface ResizePluginOption {
   locale?: Locale;
+  /**
+   * Fired after every change (drag, keyboard resize, toolbar click/input).
+   * Kept for backward compatibility; prefer the more specific callbacks
+   * below (onResizeStart/onResize/onResizeEnd/onAlignChange) for new code.
+   */
   onChange?: (element: HTMLElement) => void;
+  /** Fired once when the overlay activates for a new target. */
+  onSelect?: (element: HTMLElement) => void;
+  /** Fired when a resize gesture begins (pointer drag or keyboard step). */
+  onResizeStart?: (element: HTMLElement) => void;
+  /**
+   * Fired during a resize gesture with the current width/height/align.
+   * For pointer drags this fires on every pointermove; for keyboard/toolbar
+   * driven resizes (which have no separate "in progress" state) it fires
+   * once with the final size.
+   */
+  onResize?: (element: HTMLElement, event: ResizeChangeEvent) => void;
+  /** Fired when a resize gesture ends. */
+  onResizeEnd?: (element: HTMLElement) => void;
+  /** Fired specifically when the alignment (left/center/right/none) changes. */
+  onAlignChange?: (element: HTMLElement, align: AlignValue | null) => void;
   /** Show/hide the whole floating toolbar. Default: true. */
   showToolbar?: boolean;
   /** Display the current width/height as a small label. Default: false. */
@@ -121,6 +153,22 @@ class ResizePlugin {
         ?.querySelector<HTMLElement>(".handler")
         ?.focus?.({ preventScroll: true });
     }
+
+    this.options?.onSelect?.(resizeTarget);
+  }
+
+  /**
+   * Builds the typed payload passed to onResize/onAlignChange, reading the
+   * target's current width/height/align directly from the DOM so it always
+   * reflects the latest state (including changes made outside this class).
+   */
+  _buildChangeEvent(): ResizeChangeEvent {
+    return {
+      target: this.resizeTarget,
+      width: this.resizeTarget.clientWidth,
+      height: this.resizeTarget.clientHeight,
+      align: readAlignValue(this.resizeTarget) ?? null,
+    };
   }
 
   initResizer() {
@@ -328,6 +376,12 @@ class ResizePlugin {
     );
     this.positionResizerToTarget(this.resizeTarget);
     this._syncPersistence();
+    // Each keystroke is a complete, atomic resize gesture (there's no
+    // natural discrete "gesture end" signal for individual keypresses like
+    // there is for pointer drags), so start/resize/end all fire together.
+    this.options?.onResizeStart?.(this.resizeTarget);
+    this.options?.onResize?.(this.resizeTarget, this._buildChangeEvent());
+    this.options?.onResizeEnd?.(this.resizeTarget);
     this.options?.onChange?.(this.resizeTarget);
   }
   _setStylesForToolbar(type: string, styles: string | undefined) {
@@ -341,6 +395,20 @@ class ResizePlugin {
 
     this.positionResizerToTarget(this.resizeTarget);
     this._syncPersistence();
+
+    if (type === "align") {
+      this.options?.onAlignChange?.(
+        this.resizeTarget,
+        readAlignValue(this.resizeTarget) ?? null
+      );
+    } else {
+      // Toolbar-driven width changes (presets or restore) are a discrete
+      // resize with no separate "in progress" state, so start/resize/end
+      // all fire together, mirroring the keyboard-shortcut resize below.
+      this.options?.onResizeStart?.(this.resizeTarget);
+      this.options?.onResize?.(this.resizeTarget, this._buildChangeEvent());
+      this.options?.onResizeEnd?.(this.resizeTarget);
+    }
     this.options?.onChange?.(this.resizeTarget);
   }
   /**
@@ -393,6 +461,7 @@ class ResizePlugin {
       if (typeof target.setPointerCapture === "function") {
         target.setPointerCapture(e.pointerId);
       }
+      this.options?.onResizeStart?.(this.resizeTarget);
     }
   }
   endResize(e?: PointerEvent) {
@@ -413,6 +482,7 @@ class ResizePlugin {
     this.activePointerId = null;
     if (wasResizing) {
       this._syncPersistence();
+      this.options?.onResizeEnd?.(this.resizeTarget);
     }
     this.options?.onChange?.(this.resizeTarget);
   }
@@ -435,6 +505,7 @@ class ResizePlugin {
     this.resizeTarget.style.setProperty("width", Math.max(width, 30) + "px");
     this.resizeTarget.style.setProperty("height", Math.max(height, 30) + "px");
     this.positionResizerToTarget(this.resizeTarget);
+    this.options?.onResize?.(this.resizeTarget, this._buildChangeEvent());
   }
 
   destroy() {
@@ -458,3 +529,4 @@ class ResizePlugin {
 }
 
 export default ResizePlugin;
+export type { ResizeChangeEvent };

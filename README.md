@@ -19,6 +19,7 @@ A modern, secure module for the Quill rich text editor that allows you to resize
 - ⚡ **Performance Optimized** - Lightweight and fast
 - 🎨 **Customizable Toolbar** - Show/hide alignment and size tools
 - 📏 **Size Display** - Optional size indicator
+- 🔔 **Typed Callbacks** - `onSelect`, `onResizeStart`, `onResize`, `onResizeEnd`, `onAlignChange`
 
 ## 🚀 Demo
 
@@ -104,6 +105,33 @@ const quill = new Quill("#editor", {
 > deprecated alias for `toolbar.alignTools`, but new code should use the
 > corrected name.
 
+
+### Callbacks
+
+| Callback | Signature | Fires when |
+|----------|-----------|------------|
+| `onChange` | `(element: HTMLElement) => void` | After any change (drag, keyboard resize, toolbar click/input). Kept for backward compatibility. |
+| `onSelect` | `(element: HTMLElement) => void` | Once, when the overlay activates for a new img/video/iframe target. |
+| `onResizeStart` | `(element: HTMLElement) => void` | When a resize gesture begins (pointer drag, keyboard arrow step, or a toolbar width action). |
+| `onResize` | `(element: HTMLElement, event: ResizeChangeEvent) => void` | During a resize gesture. Fires on every `pointermove` for drags; once with the final size for keyboard/toolbar-driven resizes. |
+| `onResizeEnd` | `(element: HTMLElement) => void` | When a resize gesture ends. |
+| `onAlignChange` | `(element: HTMLElement, align: "left" \| "center" \| "right" \| null) => void` | When alignment changes via the toolbar. |
+
+`ResizeChangeEvent` is `{ target: HTMLElement; width: number; height: number; align: "left" | "center" | "right" | null }`.
+
+```typescript
+import type { QuillResizeModuleOptions, ResizeChangeEvent } from "@botom/quill-resize-module";
+
+const options: QuillResizeModuleOptions = {
+  onSelect: (element) => console.log("selected", element),
+  onResizeStart: (element) => console.log("resize start", element),
+  onResize: (element, event: ResizeChangeEvent) => {
+    console.log(`resizing to ${event.width}x${event.height}`, event.align);
+  },
+  onResizeEnd: (element) => console.log("resize end", element),
+  onAlignChange: (element, align) => console.log("align changed", align),
+};
+```
 
 ### Locale Configuration
 

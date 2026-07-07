@@ -310,6 +310,22 @@ Impacto:
 
 - Mejora DX y permite integraciones avanzadas.
 
+**✅ Implementado**: `QuillResizeModuleOptions`, `ToolbarOptions`,
+`ResizeModuleHandle` y el nuevo `ResizeChangeEvent` se exportan como tipos
+nombrados desde `src/main.ts`. Se agregaron los callbacks `onSelect`,
+`onResizeStart`, `onResize`, `onResizeEnd` y `onAlignChange`, todos
+aditivos junto al `onChange` existente (que sigue disparandose en todos
+sus puntos de invocacion previos para mantener compatibilidad). `onResize`
+recibe un `ResizeChangeEvent` tipado (`{ target, width, height, align }`)
+en vez de obligar a leer `element.style` manualmente. `ResizeConstraints`
+se difiere deliberadamente al punto 8 (limites y modos de resize), donde
+se implementara junto con el comportamiento real de min/max/lock — para
+no repetir el problema de "API documentada pero no implementada" que
+motivo el punto 2. Cubierto con tests en
+`describe("public callbacks")` (`test/ResizePlugin.test.ts`) y en
+`test/main.test.ts`. Documentado en la nueva seccion "Callbacks" del
+README.
+
 ## P2 - Diferenciacion
 
 ### 7. Alt text, title y captions
