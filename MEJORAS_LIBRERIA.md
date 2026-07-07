@@ -647,6 +647,42 @@ Propuesta:
 > errores), `npx tsc --noEmit` limpio, y `npm run build`/`npm run size`
 > sin cambios de comportamiento.
 
+## Bug critico encontrado post-implementacion: target ES5 rompia el bundle en navegador
+
+> ✅ Corregido. Tras completar el plan, se detecto en pruebas manuales con
+> Playwright (navegador real, no jsdom) que el modulo lanzaba
+> `TypeError: Class constructor <X> cannot be invoked without 'new'` al
+> inicializar Quill, impidiendo que el overlay de resize se activara del
+> todo (imagenes/videos se veian, pero sin control de resize ni toolbar).
+>
+> **Causa raiz**: `tsconfig.json` y `tsconfig.rollup.json` tenian
+> `"target": "es5"`. Al compilar `class ResizeStyleAttributor extends
+> Parchment.StyleAttributor` (y las demas clases de `src/formats.ts` y
+> `src/ResizePlugin.ts` que extienden clases nativas de Quill/DOM) a ES5,
+> TypeScript usa el helper `__extends`, que invoca al constructor padre
+> via `Parent.apply(this, arguments)` en vez de `super()`. Esto funciona
+> si el padre tambien fue "downleveleado", pero Quill 2.x distribuye sus
+> propias clases (`Parchment.StyleAttributor`, `Parchment.Attributor`,
+> etc.) como clases ES6 nativas reales — y una clase nativa lanza ese
+> `TypeError` si se invoca sin `new`.
+>
+> **Por que no lo detectaron los 107 tests**: la suite de Vitest importa
+> el codigo fuente TypeScript directamente (transformado on-the-fly por
+> Vite, que usa un target moderno), nunca pasa por el bundle real
+> compilado con `tsconfig.rollup.json`. El bug solo se manifestaba en el
+> artefacto publicado (`dist/*.js`), que es justo el que cargan todos los
+> consumidores reales — un gap de cobertura relevante para el roadmap.
+>
+> **Fix**: se subio `target` a `"es2017"` en ambos tsconfigs (compatible
+> con la matriz de navegadores ya declarada en el README — Chrome 70+,
+> Firefox 65+, Safari 12+, Edge 79+ — todos soportan ES2017 nativo). Se
+> reconstruyo el bundle y se verifico con Playwright contra
+> `demo/index.html` servido localmente: 0 errores de consola, el overlay
+> de resize se activa correctamente al hacer click en una imagen (bordes
+> de seleccion, toolbar Left/Center/Right/Restore, boton "Edit alt text
+> and title"). Se revalido con 107/107 tests, lint, `tsc --noEmit` y
+> `npm audit` sin regresiones.
+
 ## Roadmap sugerido
 
 ### Fase 1 - Confiabilidad
