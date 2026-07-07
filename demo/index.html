@@ -3,19 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>Quill Resize Module Demo</title>
     <link
       crossorigin="anonymous"
-      integrity="sha384-7kltdnODhBho8GSWnwD9l9rilXkpuia4Anp4TKHPOrp8/MS/+083g4it4MYED/hc"
-      href="https://lib.baomitu.com/quill/2.0.0-dev.3/quill.snow.min.css"
+      integrity="sha384-pqra84tv8F7wcaPbFqBHR/ChnRSUD0cU5cvFD0KwzmMdWKvjvLnW5ga3JBDAqyHW"
+      href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.min.css"
       rel="stylesheet"
     />
     <script
       crossorigin="anonymous"
-      integrity="sha384-MDio1/ps0nK1tabxUqZ+1w2NM9faPltR1mDqXcNleeuiSi0KBXqIsWofIp4r5A0+"
-      src="https://lib.baomitu.com/quill/2.0.0-dev.3/quill.min.js"
+      integrity="sha384-reiVBUvj2HgLgCZalqLFSMBVD9LdtiwGyybRGCq2AfP8Rgebz5DxEnwKp4FpagKV"
+      src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.min.js"
     ></script>
-    <script src="../dist/quill-resize-module.js"></script>
+    <!-- Loaded from the published npm package via jsdelivr, so the live
+         demo (deployed to GitHub Pages from ./demo only) always works
+         standalone without depending on a local copy of ../dist. When
+         testing local, unreleased changes, run `npm run build` and
+         temporarily point this at "../dist/quill-resize-module.js"
+         instead. -->
+    <script src="https://cdn.jsdelivr.net/npm/@botom/quill-resize-module/dist/quill-resize-module.min.js"></script>
   </head>
   <body>
     <div id="editor">
@@ -48,9 +54,20 @@
           showSize: true,
           // showToolbar: false,
           toolbar: {
-            // alingTools: false
+            // alignTools: false,
+            attributesTool: true,
           },
-          locale: {}
+          // Demonstrates the alt/title attributes panel added in the
+          // Media Attributes feature (see README "Media Attributes").
+          locale: {},
+          // Demonstrates the opt-in upload hook: replace this with a real
+          // upload call (e.g. `fetch("/api/upload", { method: "POST", body: formData })`)
+          // to send pasted/dropped images to your own backend instead of
+          // Quill's default base64 inlining. See README "Upload Hooks &
+          // Compression" for details.
+          onImageUpload: async function (file) {
+            return URL.createObjectURL(file);
+          },
         }
       }
     });

@@ -520,6 +520,52 @@ Propuesta:
   - Angular
 - Documentar claramente limitaciones y compatibilidad.
 
+**✅ Implementado**: `demo/index.html` ahora carga Quill `2.0.3` (version
+estable, la misma que la `devDependency`/`peerDependency` del proyecto)
+desde `cdn.jsdelivr.net` con hashes SRI (`integrity`) recalculados,
+reemplazando la version de desarrollo (`2.0.0-dev.3`) servida desde un
+mirror de terceros poco confiable (`lib.baomitu.com`). El demo tambien
+ejemplifica `toolbar.attributesTool` y `onImageUpload` (con
+`URL.createObjectURL` como placeholder ilustrativo).
+
+De paso se detecto y corrigio un bug real de despliegue: `demo/index.html`
+referenciaba el modulo via `../dist/quill-resize-module.js`, una ruta
+relativa que **no existe** una vez publicada, ya que
+`.github/workflows/release.yml` solo publica el contenido de `./demo` a
+`gh-pages` (sin `../dist`). El demo en vivo
+(https://botoom.github.io/quill-resize-module/) en realidad seguia
+funcionando solo porque una copia local desactualizada,
+`demo/quill-resize-module.js`, habia quedado versionada en git desde un
+commit anterior — pero esa copia jamas se actualizaba en cada release, y
+el proximo despliegue habria mostrado un demo roto (script 404) al usar
+la ruta `../dist/...`. Se elimino `demo/quill-resize-module.js` (copia
+obsoleta) y el demo ahora carga el modulo publicado desde jsdelivr
+(`https://cdn.jsdelivr.net/npm/@botom/quill-resize-module/...`), igual
+que `examples/vanilla/index.html`, garantizando que el demo desplegado
+siempre sea autosuficiente y refleje la ultima version publicada en npm.
+
+Se agrega el directorio `examples/` con:
+
+- `examples/vanilla/index.html`: HTML autonomo sin build step (CDN + `<script>`).
+- `examples/react/README.md`, `examples/nextjs/README.md`,
+  `examples/vue/README.md`, `examples/angular/README.md`: guias con
+  codigo completo y idiomatico por framework, cubriendo creacion en el
+  lifecycle hook correcto (`useEffect`/`ngAfterViewInit`/`onMounted`/
+  `mounted`), limpieza via `quill.getModule("resize").destroy()`, y notas
+  especificas (Next.js: `next/dynamic` con `ssr: false` porque el modulo
+  depende de `document`/`HTMLElement`; React: guard contra doble efecto
+  de Strict Mode).
+- `examples/README.md`: indice de ejemplos + seccion "Compatibility &
+  limitations" (version minima de Quill, incompatibilidad con SSR,
+  registro global idempotente del modulo).
+
+README enlaza `examples/` desde la seccion de Demo y agrega una nueva
+seccion "🧬 Framework Compatibility" antes de "Contributing". No se
+crearon proyectos scaffolded completos (con su propio `package.json`/
+dependencias) para cada framework para mantener la estrategia
+conservadora de no ampliar la superficie de dependencias del repositorio;
+en su lugar se documentan ejemplos de codigo completos y copiables.
+
 ### 13. Limpieza interna
 
 > ✅ Implementado parcialmente: no existian archivos `.backup` para remover.

@@ -31,6 +31,10 @@ A modern, secure module for the Quill rich text editor that allows you to resize
 
 ![Demo](https://raw.githubusercontent.com/BOTOOM/quill-resize-module/master/demo/demo.gif)
 
+Framework-specific integration examples (Vanilla, React, Next.js, Vue,
+Angular) with lifecycle/cleanup guidance are in
+[`examples/`](./examples/README.md).
+
 ## 📦 Installation
 
 ```bash
@@ -444,6 +448,16 @@ handle has an enlarged (invisible) hit area for touch screens.
 | Firefox | 65+ |
 | Safari | 12+ |
 | Edge | 79+ |
+
+## 🧬 Framework Compatibility
+
+The module has no framework dependency of its own — it only needs a
+Quill 2.x instance. Like Quill itself, it reads `document`/`HTMLElement`
+at construction time, so it cannot run during server-side rendering; in
+SSR frameworks (Next.js, Nuxt, Angular Universal, etc.) always create the
+editor on the client only. See [`examples/`](./examples/README.md) for
+worked Vanilla, React, Next.js, Vue, and Angular integrations, including
+SSR guidance and cleanup/`destroy()` lifecycle wiring.
 
 ## 🤝 Contributing
 
