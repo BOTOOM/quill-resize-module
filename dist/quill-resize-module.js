@@ -404,8 +404,8 @@
                 resizePlugin = new ResizePlugin(target, container.parentElement, options);
             }
         });
-        quill.on("text-change", function (delta, source) {
-            // iframe 大小调整
+        quill.on("text-change", function (_delta, _oldDelta, _source) {
+            // Re-scan iframes after each text change to (re)apply resize tracking
             container.querySelectorAll("iframe").forEach(function (item) {
                 normalizeYouTubeIframe(item);
                 IframeClick.track(item, function () {

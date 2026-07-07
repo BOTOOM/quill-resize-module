@@ -74,8 +74,8 @@ function QuillResizeModule(quill: Quill, options?: QuillResizeModuleOptions) {
     }
   });
 
-  quill.on("text-change", (delta: any, source: string) => {
-    // iframe 大小调整
+  quill.on("text-change", (_delta: any, _oldDelta: any, _source: string) => {
+    // Re-scan iframes after each text change to (re)apply resize tracking
     container.querySelectorAll("iframe").forEach((item: HTMLIFrameElement) => {
       normalizeYouTubeIframe(item);
 
