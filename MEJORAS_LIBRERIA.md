@@ -393,6 +393,28 @@ Impacto:
 
 - Amplia el mercado objetivo sin romper la API principal.
 
+**✅ Implementado**: se agrego la opcion `embedTags?: string[]` (por
+defecto `["img", "video"]`, con semantica de reemplazo total, no merge)
+para configurar que tags disparan el overlay de resize al hacer click, y
+`resolveEmbed?: (clickedTarget, event) => HTMLElement | null | undefined`
+como resolver custom que se evalua antes de `embedTags`, permitiendo
+soportar wrappers propios (por ejemplo `clickedTarget.closest(".mi-embed")`)
+sin fork. Ambas opciones aplican solo al flujo de click directo
+(`onContainerClick`); el tracking de iframes sigue su mecanismo separado
+de focus-polling ya existente, ya que los clicks dentro de contenido
+cross-origin no burbujean al documento padre. La persistencia Quill-native
+(`syncResizeStateToQuill` en `src/formats.ts`) ya era agnostica al tag
+(usa `quill.constructor.find(target)` de Parchment), por lo que los
+embeds custom obtienen persistencia en el Delta "gratis" si estan
+respaldados por un blot. `constraintsByTag` se amplio de
+`Partial<Record<"img"|"video"|"iframe", ResizeConstraints>>` a
+`Partial<Record<string, ResizeConstraints>>` para soportar tags
+arbitrarios. Cubierto por 3 tests nuevos en `test/main.test.ts`
+(override completo de `embedTags`, resolver de wrapper custom via
+`resolveEmbed`, y fallback a `embedTags` cuando `resolveEmbed` no
+resuelve nada). Documentado en la nueva seccion "🧩 Custom Embeds" del
+README.
+
 ### 10. Hooks de upload y compresion
 
 Objetivo:

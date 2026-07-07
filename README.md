@@ -21,6 +21,7 @@ A modern, secure module for the Quill rich text editor that allows you to resize
 - 📏 **Size Display** - Optional size indicator
 - 🔔 **Typed Callbacks** - `onSelect`, `onResizeStart`, `onResize`, `onResizeEnd`, `onAlignChange`
 - 📐 **Resize Constraints** - min/max width/height, aspect-ratio locking (globally or per embed tag), and `%`/`px` size modes with configurable presets
+- 🧩 **Custom Embeds** - configure which tags trigger the overlay (`embedTags`) or resolve arbitrary wrapper elements (`resolveEmbed`) without forking
 
 ## 🚀 Demo
 
@@ -104,7 +105,9 @@ const quill = new Quill("#editor", {
 | `toolbar.sizePresets` | number[] | `[100, 50]` | Percentages rendered as quick-size preset buttons |
 | `toolbar.sizeUnit` | `"%"` \| `"px"` | `"%"` | Unit applied by preset buttons and the width input (see [Resize Constraints & Modes](#-resize-constraints--modes)) |
 | `constraints` | `ResizeConstraints` | `{}` | Min/max width & height and aspect-ratio locking, applied to every target (see below) |
-| `constraintsByTag` | object | `{}` | Per-tag override of `constraints` (`{ img, video, iframe }`) |
+| `constraintsByTag` | object | `{}` | Per-tag override of `constraints` (e.g. `{ img: {...}, video: {...}, myEmbed: {...} }`) |
+| `embedTags` | string[] | `["img", "video"]` | Tags that trigger the resize overlay on click. **Fully replaces** the default list — set it to add custom tags (e.g. `["img", "video", "canvas"]`) |
+| `resolveEmbed` | function | `undefined` | Custom resolver `(clickedTarget, event) => HTMLElement \| null` to support arbitrary wrapper elements (see [Custom Embeds](#-custom-embeds)) |
 
 > `toolbar.alingTools` (the original, misspelled name) still works as a
 > deprecated alias for `toolbar.alignTools`, but new code should use the
@@ -226,6 +229,50 @@ mode they compute an absolute width from the embed's original size
 `height: auto;`, so the embed keeps a fixed size regardless of the
 container's width. `minWidth`/`maxWidth` constraints are enforced on
 `px`-mode preset/input changes.
+
+## 🧩 Custom Embeds
+
+By default, clicking an `img` or `video` attaches the resize overlay
+(iframes — e.g. YouTube embeds — are handled separately via focus
+tracking, since clicks inside cross-origin iframe content don't bubble to
+the parent document). You can extend or completely replace this behavior
+without forking the library:
+
+```javascript
+const quill = new Quill("#editor", {
+  modules: {
+    resize: {
+      // Fully replaces the default ["img", "video"] list — include every
+      // tag you want to be resizable.
+      embedTags: ["img", "video", "canvas", "my-custom-embed"],
+    },
+  },
+});
+```
+
+For embeds that aren't a single element (e.g. a wrapper `<div>` or
+`<figure>` around an inner element), use `resolveEmbed` to resolve the
+click to the element that should actually be resized:
+
+```javascript
+const quill = new Quill("#editor", {
+  modules: {
+    resize: {
+      resolveEmbed(clickedTarget, event) {
+        // Clicking anywhere inside a ".chart-embed" wrapper resizes the
+        // wrapper itself, not the element that was clicked.
+        return clickedTarget.closest(".chart-embed");
+      },
+    },
+  },
+});
+```
+
+`resolveEmbed` is checked first; if it returns `null`/`undefined`, the
+module falls back to `embedTags`-based matching on the clicked element's
+own tag name. Both `constraintsByTag` and persistence through Quill's
+Delta model (for blot-backed elements) work with custom embeds exactly
+as they do for `img`/`video`.
 
 ## 🔧 Advanced Configuration
 

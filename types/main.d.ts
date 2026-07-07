@@ -83,11 +83,30 @@ interface QuillResizeModuleOptions {
     constraints?: ResizeConstraints;
     /**
      * Per-tag override of `constraints` (e.g. force a locked aspect ratio
-     * only for `video`/`iframe` embeds). Fields specified here take
-     * precedence over the matching field in the global `constraints` for
-     * that tag.
+     * only for `video`/`iframe` embeds, or for a custom embed tag). Fields
+     * specified here take precedence over the matching field in the global
+     * `constraints` for that tag.
      */
-    constraintsByTag?: Partial<Record<"img" | "video" | "iframe", ResizeConstraints>>;
+    constraintsByTag?: Partial<Record<string, ResizeConstraints>>;
+    /**
+     * Tags that trigger the resize overlay when clicked directly, in
+     * addition to (or, since this fully replaces the default array, instead
+     * of) the built-in `img`/`video` handling. Default: `["img", "video"]`.
+     * Doesn't apply to iframes, which use a separate focus-polling mechanism
+     * (see IframeClick) since clicks inside cross-origin iframe content
+     * don't bubble to the parent document.
+     */
+    embedTags?: string[];
+    /**
+     * Custom resolver for determining which element should become the
+     * resize target for a given click — lets consumers support custom
+     * wrapper elements or arbitrary embed shapes without forking the
+     * library (e.g. resolving a click inside a caption wrapper to the
+     * wrapper itself via `clickedTarget.closest(".my-embed")`). Return the
+     * element to resize, or `null`/`undefined` to fall back to the default
+     * `embedTags`-based tag matching.
+     */
+    resolveEmbed?: (clickedTarget: HTMLElement, event: MouseEvent) => HTMLElement | null | undefined;
     [index: string]: any;
 }
 /**

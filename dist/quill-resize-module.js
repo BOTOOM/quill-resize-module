@@ -936,6 +936,24 @@
         }
         return __assign(__assign({}, options === null || options === void 0 ? void 0 : options.constraints), perTag);
     }
+    var DEFAULT_EMBED_TAGS = ["img", "video"];
+    /**
+     * Determines which element (if any) should become the resize target for a
+     * given click. Tries `options.resolveEmbed` first — letting consumers
+     * support custom wrapper elements or arbitrary embed shapes without
+     * forking the library — and falls back to matching `options.embedTags`
+     * (default `["img", "video"]`) against the clicked element's own tag.
+     */
+    function resolveClickTarget(clickedTarget, event, options) {
+        var _a, _b, _c;
+        var resolved = (_a = options === null || options === void 0 ? void 0 : options.resolveEmbed) === null || _a === void 0 ? void 0 : _a.call(options, clickedTarget, event);
+        if (resolved) {
+            return resolved;
+        }
+        var embedTags = (_b = options === null || options === void 0 ? void 0 : options.embedTags) !== null && _b !== void 0 ? _b : DEFAULT_EMBED_TAGS;
+        var tagName = (_c = clickedTarget === null || clickedTarget === void 0 ? void 0 : clickedTarget.tagName) === null || _c === void 0 ? void 0 : _c.toLowerCase();
+        return tagName && embedTags.includes(tagName) ? clickedTarget : null;
+    }
     function QuillResizeModule(quill, options) {
         var container = quill.root;
         var resizeTarge;
@@ -948,12 +966,11 @@
         registerResizeFormats(quill.constructor);
         var pluginOptions = __assign(__assign({}, options), { __quillInstance: quill });
         var onContainerClick = function (e) {
-            var _a;
-            var target = e.target;
-            var tagName = (_a = target === null || target === void 0 ? void 0 : target.tagName) === null || _a === void 0 ? void 0 : _a.toLowerCase();
-            if (e.target && ["img", "video"].includes(tagName)) {
+            var clickedTarget = e.target;
+            var target = resolveClickTarget(clickedTarget, e, options);
+            if (target) {
                 resizeTarge = target;
-                resizePlugin = new ResizePlugin(target, container.parentElement, __assign(__assign({}, pluginOptions), { constraints: resolveConstraints(tagName, options) }));
+                resizePlugin = new ResizePlugin(target, container.parentElement, __assign(__assign({}, pluginOptions), { constraints: resolveConstraints(target.tagName.toLowerCase(), options) }));
             }
         };
         container.addEventListener("click", onContainerClick);

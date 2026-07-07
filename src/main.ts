@@ -89,11 +89,33 @@ interface QuillResizeModuleOptions {
   constraints?: ResizeConstraints;
   /**
    * Per-tag override of `constraints` (e.g. force a locked aspect ratio
-   * only for `video`/`iframe` embeds). Fields specified here take
-   * precedence over the matching field in the global `constraints` for
-   * that tag.
+   * only for `video`/`iframe` embeds, or for a custom embed tag). Fields
+   * specified here take precedence over the matching field in the global
+   * `constraints` for that tag.
    */
-  constraintsByTag?: Partial<Record<"img" | "video" | "iframe", ResizeConstraints>>;
+  constraintsByTag?: Partial<Record<string, ResizeConstraints>>;
+  /**
+   * Tags that trigger the resize overlay when clicked directly, in
+   * addition to (or, since this fully replaces the default array, instead
+   * of) the built-in `img`/`video` handling. Default: `["img", "video"]`.
+   * Doesn't apply to iframes, which use a separate focus-polling mechanism
+   * (see IframeClick) since clicks inside cross-origin iframe content
+   * don't bubble to the parent document.
+   */
+  embedTags?: string[];
+  /**
+   * Custom resolver for determining which element should become the
+   * resize target for a given click — lets consumers support custom
+   * wrapper elements or arbitrary embed shapes without forking the
+   * library (e.g. resolving a click inside a caption wrapper to the
+   * wrapper itself via `clickedTarget.closest(".my-embed")`). Return the
+   * element to resize, or `null`/`undefined` to fall back to the default
+   * `embedTags`-based tag matching.
+   */
+  resolveEmbed?: (
+    clickedTarget: HTMLElement,
+    event: MouseEvent
+  ) => HTMLElement | null | undefined;
   [index: string]: any;
 }
 
@@ -165,12 +187,34 @@ function resolveConstraints(
   tagName: string,
   options?: QuillResizeModuleOptions
 ): ResizeConstraints | undefined {
-  const perTag =
-    options?.constraintsByTag?.[tagName as "img" | "video" | "iframe"];
+  const perTag = options?.constraintsByTag?.[tagName];
   if (!options?.constraints && !perTag) {
     return undefined;
   }
   return { ...options?.constraints, ...perTag };
+}
+
+const DEFAULT_EMBED_TAGS = ["img", "video"];
+
+/**
+ * Determines which element (if any) should become the resize target for a
+ * given click. Tries `options.resolveEmbed` first — letting consumers
+ * support custom wrapper elements or arbitrary embed shapes without
+ * forking the library — and falls back to matching `options.embedTags`
+ * (default `["img", "video"]`) against the clicked element's own tag.
+ */
+function resolveClickTarget(
+  clickedTarget: HTMLElement,
+  event: MouseEvent,
+  options?: QuillResizeModuleOptions
+): HTMLElement | null {
+  const resolved = options?.resolveEmbed?.(clickedTarget, event);
+  if (resolved) {
+    return resolved;
+  }
+  const embedTags = options?.embedTags ?? DEFAULT_EMBED_TAGS;
+  const tagName = clickedTarget?.tagName?.toLowerCase();
+  return tagName && embedTags.includes(tagName) ? clickedTarget : null;
 }
 
 function QuillResizeModule(
@@ -193,16 +237,19 @@ function QuillResizeModule(
   };
 
   const onContainerClick = (e: Event) => {
-    const target: HTMLElement = e.target as HTMLElement;
-    const tagName = target?.tagName?.toLowerCase();
-    if (e.target && ["img", "video"].includes(tagName)) {
+    const clickedTarget: HTMLElement = e.target as HTMLElement;
+    const target = resolveClickTarget(clickedTarget, e as MouseEvent, options);
+    if (target) {
       resizeTarge = target;
       resizePlugin = new ResizePlugin(
         target,
         container.parentElement as HTMLElement,
         {
           ...pluginOptions,
-          constraints: resolveConstraints(tagName, options),
+          constraints: resolveConstraints(
+            target.tagName.toLowerCase(),
+            options
+          ),
         }
       );
     }

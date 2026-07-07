@@ -124,6 +124,57 @@ describe("QuillResizeModule", () => {
     expect(img.style.width).toBe("120px");
   });
 
+  it("attaches a resizer overlay for a custom embedTags entry and not for tags outside it", () => {
+    const { wrapper, root } = createEditor();
+    const custom = document.createElement("canvas");
+    const img = document.createElement("img");
+    root.appendChild(custom);
+    root.appendChild(img);
+    const quill = createQuillMock(root);
+
+    const handle = QuillResizeModule(quill, { embedTags: ["canvas"] });
+    custom.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(wrapper.querySelector("#editor-resizer")).not.toBeNull();
+    handle.destroy();
+    expect(wrapper.querySelector("#editor-resizer")).toBeNull();
+
+    img.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(wrapper.querySelector("#editor-resizer")).toBeNull();
+  });
+
+  it("uses resolveEmbed to resize a custom wrapper element instead of the clicked child", () => {
+    const { wrapper, root } = createEditor();
+    const figure = document.createElement("figure");
+    figure.className = "my-embed";
+    const span = document.createElement("span");
+    figure.appendChild(span);
+    root.appendChild(figure);
+    const quill = createQuillMock(root);
+    const resolveEmbed = vi.fn((clickedTarget: HTMLElement) =>
+      clickedTarget.closest<HTMLElement>(".my-embed")
+    );
+
+    QuillResizeModule(quill, { resolveEmbed });
+    span.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(resolveEmbed).toHaveBeenCalled();
+    expect(wrapper.querySelector("#editor-resizer")).not.toBeNull();
+  });
+
+  it("falls back to embedTags matching when resolveEmbed returns nothing", () => {
+    const { wrapper, root } = createEditor();
+    const img = document.createElement("img");
+    root.appendChild(img);
+    const quill = createQuillMock(root);
+    const resolveEmbed = vi.fn(() => null);
+
+    QuillResizeModule(quill, { resolveEmbed });
+    img.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(resolveEmbed).toHaveBeenCalled();
+    expect(wrapper.querySelector("#editor-resizer")).not.toBeNull();
+  });
+
   it("ignores clicks on elements that are not img/video", () => {
     const { wrapper, root } = createEditor();
     const paragraph = document.createElement("p");
