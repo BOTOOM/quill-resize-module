@@ -1,6 +1,7 @@
 import ResizePlugin from "./ResizePlugin";
 import IframeOnClick from "./IframeClick";
 import { Locale } from "./i18n";
+import { registerResizeFormats } from "./formats";
 
 interface Quill {
   container: HTMLElement;
@@ -62,6 +63,17 @@ function QuillResizeModule(quill: Quill, options?: QuillResizeModuleOptions) {
   const container: HTMLElement = quill.root as HTMLElement;
   let resizeTarge: HTMLElement | null;
   let resizePlugin: ResizePlugin | null;
+
+  // Enables width/height/align to persist through Quill Delta round trips
+  // (getContents()/setContents()) instead of relying solely on inline
+  // styles. No-ops for duck-typed/mock Quill instances that don't expose a
+  // real Parchment-backed constructor.
+  registerResizeFormats((quill as { constructor?: any }).constructor);
+  const pluginOptions: QuillResizeModuleOptions = {
+    ...options,
+    __quillInstance: quill,
+  };
+
   container.addEventListener("click", (e: Event) => {
     const target: HTMLElement = e.target as HTMLElement;
     if (e.target && ["img", "video"].includes(target.tagName.toLowerCase())) {
@@ -69,7 +81,7 @@ function QuillResizeModule(quill: Quill, options?: QuillResizeModuleOptions) {
       resizePlugin = new ResizePlugin(
         target,
         container.parentElement as HTMLElement,
-        options
+        pluginOptions
       );
     }
   });
@@ -84,7 +96,7 @@ function QuillResizeModule(quill: Quill, options?: QuillResizeModuleOptions) {
         resizePlugin = new ResizePlugin(
           item,
           container.parentElement as HTMLElement,
-          options
+          pluginOptions
         );
       });
     });

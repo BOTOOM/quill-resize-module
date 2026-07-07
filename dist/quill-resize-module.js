@@ -144,6 +144,209 @@
         return null;
     }
 
+    /**
+     * Quill-native persistence for resize/align state.
+     *
+     * Historically this module persisted `width`, `height` and alignment only
+     * as inline styles on the DOM node, which Quill has no knowledge of. That
+     * state was lost on every `getContents()` / `setContents()` round trip
+     * (see GitHub issues #13 and #14). This module registers Parchment
+     * attributors and blot overrides so those three properties become part of
+     * the Quill Delta itself, alongside the existing inline-style behavior
+     * (kept for immediate visual feedback and for consumers that don't use the
+     * Delta API at all).
+     *
+     * `align` is exposed under the Delta attribute name `resizeAlign` rather
+     * than `align` to avoid colliding with Quill's own built-in block-level
+     * `align` format (paragraph text-align), which every default Quill build
+     * already registers.
+     */
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    var WIDTH_FORMAT = "width";
+    var HEIGHT_FORMAT = "height";
+    var ALIGN_FORMAT = "resizeAlign";
+    var VIDEO_FILE_BLOT_NAME = "videoFile";
+    var ALIGN_VALUES = ["left", "center", "right"];
+    function readAlignValue(node) {
+        if (node.style.float === "left") {
+            return "left";
+        }
+        if (node.style.float === "right") {
+            return "right";
+        }
+        if (node.style.display === "block" && node.style.margin === "auto") {
+            return "center";
+        }
+        return undefined;
+    }
+    function applyAlignValue(node, value) {
+        node.style.removeProperty("float");
+        node.style.removeProperty("display");
+        node.style.removeProperty("margin");
+        if (value === "left" || value === "right") {
+            node.style.setProperty("float", value);
+        }
+        else if (value === "center") {
+            node.style.setProperty("display", "block");
+            node.style.setProperty("margin", "auto");
+        }
+    }
+    function createStyleAttributor(Parchment, attrName, keyName) {
+        var ResizeStyleAttributor = /** @class */ (function (_super) {
+            __extends(ResizeStyleAttributor, _super);
+            function ResizeStyleAttributor(name, key, options) {
+                return _super.call(this, name, key, options) || this;
+            }
+            return ResizeStyleAttributor;
+        }(Parchment.StyleAttributor));
+        return new ResizeStyleAttributor(attrName, keyName, {
+            scope: Parchment.Scope.INLINE,
+        });
+    }
+    function createAlignAttributor(Parchment) {
+        var ResizeAlignAttributor = /** @class */ (function (_super) {
+            __extends(ResizeAlignAttributor, _super);
+            function ResizeAlignAttributor(name, key, options) {
+                return _super.call(this, name, key, options) || this;
+            }
+            ResizeAlignAttributor.prototype.add = function (node, value) {
+                if (!this.canAdd(node, value)) {
+                    return false;
+                }
+                applyAlignValue(node, value);
+                return true;
+            };
+            ResizeAlignAttributor.prototype.remove = function (node) {
+                applyAlignValue(node, undefined);
+            };
+            ResizeAlignAttributor.prototype.value = function (node) {
+                return readAlignValue(node);
+            };
+            return ResizeAlignAttributor;
+        }(Parchment.Attributor));
+        return new ResizeAlignAttributor(ALIGN_FORMAT, "align", {
+            scope: Parchment.Scope.INLINE,
+            whitelist: ALIGN_VALUES,
+        });
+    }
+    function withResizeFormats(BaseBlot, attributors) {
+        return /** @class */ (function (_super) {
+            __extends(ResizableBlot, _super);
+            function ResizableBlot() {
+                return _super !== null && _super.apply(this, arguments) || this;
+            }
+            ResizableBlot.formats = function (domNode) {
+                var formats = typeof BaseBlot.formats === "function"
+                    ? __assign({}, BaseBlot.formats(domNode)) : {};
+                attributors.forEach(function (attributor) {
+                    var value = attributor.value(domNode);
+                    if (value) {
+                        formats[attributor.attrName] = value;
+                    }
+                });
+                return formats;
+            };
+            ResizableBlot.prototype.format = function (name, value) {
+                var attributor = attributors.find(function (item) { return item.attrName === name; });
+                if (attributor) {
+                    if (value) {
+                        attributor.add(this.domNode, value);
+                    }
+                    else {
+                        attributor.remove(this.domNode);
+                    }
+                    return;
+                }
+                _super.prototype.format.call(this, name, value);
+            };
+            return ResizableBlot;
+        }(BaseBlot));
+    }
+    /**
+     * Blot for literal HTML5 `<video>` elements (self-hosted media), which
+     * Quill has no built-in format for — its default `formats/video` blot
+     * renders an `<iframe>` embed instead. Registered as a plain inline embed,
+     * mirroring how `formats/image` behaves.
+     */
+    function createVideoFileBlot(Parchment) {
+        var VideoFile = /** @class */ (function (_super) {
+            __extends(VideoFile, _super);
+            function VideoFile() {
+                return _super !== null && _super.apply(this, arguments) || this;
+            }
+            VideoFile.create = function (value) {
+                var node = _super.create.call(this, value);
+                node.setAttribute("controls", "true");
+                if (typeof value === "string") {
+                    node.setAttribute("src", value);
+                }
+                return node;
+            };
+            VideoFile.value = function (domNode) {
+                return domNode.getAttribute("src");
+            };
+            VideoFile.blotName = VIDEO_FILE_BLOT_NAME;
+            VideoFile.tagName = "VIDEO";
+            return VideoFile;
+        }(Parchment.EmbedBlot));
+        return VideoFile;
+    }
+    var registered = false;
+    /**
+     * Registers resize-aware `image`, `video` (iframe embed) and `videoFile`
+     * (literal `<video>` tag) blots on the given Quill class. Idempotent: safe
+     * to call once per editor instance, registration only ever happens once.
+     */
+    function registerResizeFormats(QuillCtor) {
+        if (registered || !(QuillCtor === null || QuillCtor === void 0 ? void 0 : QuillCtor.import)) {
+            return;
+        }
+        var Parchment = QuillCtor.import("parchment");
+        var attributors = [
+            createStyleAttributor(Parchment, WIDTH_FORMAT, "width"),
+            createStyleAttributor(Parchment, HEIGHT_FORMAT, "height"),
+            createAlignAttributor(Parchment),
+        ];
+        var BaseImage = QuillCtor.import("formats/image");
+        var BaseVideo = QuillCtor.import("formats/video");
+        if (BaseImage) {
+            QuillCtor.register(withResizeFormats(BaseImage, attributors), true);
+        }
+        if (BaseVideo) {
+            QuillCtor.register(withResizeFormats(BaseVideo, attributors), true);
+        }
+        var VideoFileBlot = createVideoFileBlot(Parchment);
+        QuillCtor.register(withResizeFormats(VideoFileBlot, attributors), true);
+        registered = true;
+    }
+    /**
+     * Reads the given quill instance's Parchment blot for a resize target (if
+     * any) and, when found, persists the current width/height/align inline
+     * styles into the Quill Delta via `formatText`, so they survive
+     * `getContents()` / `setContents()` round trips.
+     *
+     * No-ops when the module wasn't given a live Quill instance (e.g. when
+     * `ResizePlugin` is used standalone, without Quill formats registered), or
+     * when the target isn't backed by a registered blot.
+     */
+    function syncResizeStateToQuill(quill, target) {
+        var _a;
+        var _b;
+        if (!((_b = quill === null || quill === void 0 ? void 0 : quill.constructor) === null || _b === void 0 ? void 0 : _b.find) || typeof quill.getIndex !== "function") {
+            return;
+        }
+        var blot = quill.constructor.find(target);
+        if (!blot || typeof quill.formatText !== "function") {
+            return;
+        }
+        var index = quill.getIndex(blot);
+        quill.formatText(index, 1, (_a = {},
+            _a[WIDTH_FORMAT] = target.style.width || "",
+            _a[HEIGHT_FORMAT] = target.style.height || "",
+            _a[ALIGN_FORMAT] = readAlignValue(target) || "",
+            _a), "user");
+    }
+
     /** @class */ ((function (_super) {
         __extends(ResizeElement, _super);
         function ResizeElement() {
@@ -239,7 +442,7 @@
             });
         };
         ResizePlugin.prototype._setStylesForToolbar = function (type, styles) {
-            var _a;
+            var _a, _b;
             var storeKey = "_styles_".concat(type);
             var style = this.resizeTarget.style;
             var originStyles = this.resizeTarget[storeKey];
@@ -248,7 +451,21 @@
                     ";".concat(styles);
             this.resizeTarget[storeKey] = styles;
             this.positionResizerToTarget(this.resizeTarget);
-            (_a = this.options) === null || _a === void 0 ? void 0 : _a.onChange(this.resizeTarget);
+            this._syncPersistence();
+            (_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.onChange) === null || _b === void 0 ? void 0 : _b.call(_a, this.resizeTarget);
+        };
+        /**
+         * Persists the current width/height/align inline styles into the Quill
+         * Delta (when a live Quill instance was provided via options), so they
+         * survive getContents()/setContents() round trips instead of only living
+         * as inline styles on the DOM node.
+         */
+        ResizePlugin.prototype._syncPersistence = function () {
+            var _a;
+            var quill = (_a = this.options) === null || _a === void 0 ? void 0 : _a.__quillInstance;
+            if (quill) {
+                syncResizeStateToQuill(quill, this.resizeTarget);
+            }
         };
         ResizePlugin.prototype.toolbarInputChange = function (e) {
             var _a;
@@ -279,9 +496,13 @@
             }
         };
         ResizePlugin.prototype.endResize = function () {
-            var _a;
+            var _a, _b;
+            var wasResizing = this.startResizePosition !== null;
             this.startResizePosition = null;
-            (_a = this.options) === null || _a === void 0 ? void 0 : _a.onChange(this.resizeTarget);
+            if (wasResizing) {
+                this._syncPersistence();
+            }
+            (_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.onChange) === null || _b === void 0 ? void 0 : _b.call(_a, this.resizeTarget);
         };
         ResizePlugin.prototype.resizing = function (e) {
             if (!this.startResizePosition)
@@ -397,11 +618,17 @@
         var container = quill.root;
         var resizeTarge;
         var resizePlugin;
+        // Enables width/height/align to persist through Quill Delta round trips
+        // (getContents()/setContents()) instead of relying solely on inline
+        // styles. No-ops for duck-typed/mock Quill instances that don't expose a
+        // real Parchment-backed constructor.
+        registerResizeFormats(quill.constructor);
+        var pluginOptions = __assign(__assign({}, options), { __quillInstance: quill });
         container.addEventListener("click", function (e) {
             var target = e.target;
             if (e.target && ["img", "video"].includes(target.tagName.toLowerCase())) {
                 resizeTarge = target;
-                resizePlugin = new ResizePlugin(target, container.parentElement, options);
+                resizePlugin = new ResizePlugin(target, container.parentElement, pluginOptions);
             }
         });
         quill.on("text-change", function (_delta, _oldDelta, _source) {
@@ -410,7 +637,7 @@
                 normalizeYouTubeIframe(item);
                 IframeClick.track(item, function () {
                     resizeTarge = item;
-                    resizePlugin = new ResizePlugin(item, container.parentElement, options);
+                    resizePlugin = new ResizePlugin(item, container.parentElement, pluginOptions);
                 });
             });
         });

@@ -1,6 +1,7 @@
 import "./ResizePlugin.less";
 import { I18n, Locale, defaultLocale } from "./i18n";
 import { format, getScrollParent } from "./utils";
+import { syncResizeStateToQuill } from "./formats";
 
 interface Size {
   width: number;
@@ -20,6 +21,12 @@ class ResizeElement extends HTMLElement {
 interface ResizePluginOption {
   locale?: Locale;
   onChange?: (element: HTMLElement) => void;
+  /**
+   * Live Quill instance, used internally to persist width/height/align
+   * through the Delta model. Set automatically by QuillResizeModule; not
+   * meant to be provided directly by consumers.
+   */
+  __quillInstance?: any;
   [index: string]: any;
 }
 const template = `
@@ -165,7 +172,20 @@ class ResizePlugin {
     this.resizeTarget[storeKey] = styles;
 
     this.positionResizerToTarget(this.resizeTarget);
-    this.options?.onChange(this.resizeTarget);
+    this._syncPersistence();
+    this.options?.onChange?.(this.resizeTarget);
+  }
+  /**
+   * Persists the current width/height/align inline styles into the Quill
+   * Delta (when a live Quill instance was provided via options), so they
+   * survive getContents()/setContents() round trips instead of only living
+   * as inline styles on the DOM node.
+   */
+  _syncPersistence() {
+    const quill = this.options?.__quillInstance;
+    if (quill) {
+      syncResizeStateToQuill(quill, this.resizeTarget);
+    }
   }
   toolbarInputChange(e: Event) {
     const target: HTMLInputElement = e.target as HTMLInputElement;
@@ -195,8 +215,12 @@ class ResizePlugin {
     }
   }
   endResize() {
+    const wasResizing = this.startResizePosition !== null;
     this.startResizePosition = null;
-    this.options?.onChange(this.resizeTarget);
+    if (wasResizing) {
+      this._syncPersistence();
+    }
+    this.options?.onChange?.(this.resizeTarget);
   }
   resizing(e: MouseEvent) {
     if (!this.startResizePosition) return;
