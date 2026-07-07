@@ -39,6 +39,15 @@ interface ResizePluginOption {
      * meant to be provided directly by consumers.
      */
     __quillInstance?: any;
+    /**
+     * Internal only: whether to move focus onto the resize handle once the
+     * overlay activates. Set to `false` by QuillResizeModule for iframes
+     * tracked via IframeClick's focus-polling loop, since that loop uses
+     * `document.activeElement === iframe` to detect the iframe is still
+     * active — auto-focusing the handle would immediately look like a focus
+     * loss to it. Not meant to be provided directly by consumers.
+     */
+    __autoFocus?: boolean;
     [index: string]: any;
 }
 declare class ResizePlugin {
@@ -62,6 +71,20 @@ declare class ResizePlugin {
     applyToolbarVisibility(): void;
     positionResizerToTarget(el: HTMLElement): void;
     bindEvents(): void;
+    /**
+     * Keyboard equivalent of dragging the resize handle, so the overlay can
+     * be operated without a mouse/touch pointer once it has focus:
+     *  - Arrow keys resize by a small step (bigger with Shift held).
+     *  - Alt+Arrow preserves the original aspect ratio, mirroring the
+     *    existing Alt-drag behavior.
+     *  - "0" restores the original size (same action as the toolbar's
+     *    restore button).
+     *  - Escape closes the overlay, by simulating the same "pointerdown
+     *    outside the target" interaction that main.ts already listens for
+     *    and uses to tear the overlay down — reusing that single, tested
+     *    code path instead of duplicating close/cleanup logic here.
+     */
+    onKeyDown(e: KeyboardEvent): void;
     _setStylesForToolbar(type: string, styles: string | undefined): void;
     /**
      * Persists the current width/height/align inline styles into the Quill

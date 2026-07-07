@@ -5,6 +5,8 @@ declare class Locale {
     center?: string;
     restore?: string;
     inputTip?: string;
+    toolbarLabel?: string;
+    handlerLabel?: string;
 }
 declare class I18n {
     config: Locale;

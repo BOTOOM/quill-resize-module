@@ -2,6 +2,22 @@
   position: absolute;
   border: 1px dashed #fff;
   background-color: rgba(0, 0, 0, 0.5);
+  /* .handler and .btn are real <button> elements (for native keyboard
+     activation/focusability), which come with browser default chrome
+     (padding, border, background, font). Reset that here; the more
+     specific .handler/.btn rules below win the cascade and re-apply the
+     actual look, so this is purely an appearance reset, not a behavior
+     change. `all: unset` also clears the default focus outline, so it is
+     restored explicitly via :focus-visible. */
+  button {
+    all: unset;
+    box-sizing: border-box;
+    cursor: pointer;
+    &:focus-visible {
+      outline: 2px solid #4f9eff;
+      outline-offset: 2px;
+    }
+  }
   .handler {
     position: absolute;
     right: -5px;

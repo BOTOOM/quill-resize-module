@@ -260,6 +260,32 @@ Impacto:
 
 - Mejora calidad percibida y compatibilidad en entornos serios.
 
+**✅ Implementado**: el handle de resize y todos los botones del toolbar
+ahora son elementos `<button type="button">` reales (antes eran `<a>` sin
+`href`, no operables ni anunciados correctamente por lectores de
+pantalla) — ver el `template` en `src/ResizePlugin.ts`. Se agrega
+`role="toolbar"` + `aria-label` al toolbar, `aria-label` descriptivo al
+handle (nueva clave de locale `handlerLabel`) y al input de ancho (clave
+`inputTip` reutilizada). El foco se mueve automaticamente al handle
+cuando el overlay se activa, permitiendo operar solo con teclado una vez
+abierto (deshabilitable por instancia interna via `__autoFocus` para no
+interferir con el polling de foco que usa `IframeClick` para videos
+embebidos). Atajos de teclado en el handle: flechas para redimensionar
+(paso de 1px, 10px con Shift), Alt+flecha para bloquear el ratio de
+aspecto (igual que arrastrando con Alt), `0` para restaurar el tamano
+original, y `Escape` para cerrar el overlay. El reset de estilos de
+`<button>` en `ResizePlugin.less` preserva el look visual previo y
+restaura un `:focus-visible` explicito (ya que `all: unset` lo elimina).
+
+**Limitacion conocida y diferida**: activar el overlay por primera vez
+sigue dependiendo de un click/foco previo sobre la imagen/video (no se
+agrego `tabindex` automatico a `<img>`/`<video>` para hacerlos alcanzables
+por Tab desde cero, ya que eso afectaria el orden de tabulacion de
+cualquier pagina que use el editor). Queda anotado como candidato para una
+futura iteracion de accesibilidad. Cubierto por 10 tests nuevos en
+`describe("accessibility and keyboard interaction")`
+(`test/ResizePlugin.test.ts`).
+
 ### 6. API publica mas limpia
 
 Objetivo:

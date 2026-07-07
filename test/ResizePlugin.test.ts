@@ -510,4 +510,184 @@ describe("ResizePlugin", () => {
       expect(shownLabel.textContent).toBe("320 x 180");
     });
   });
+
+  describe("accessibility and keyboard interaction", () => {
+    it("renders the handler and toolbar controls as real buttons instead of anchors", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container);
+
+      expect(plugin.resizer?.querySelector(".handler")?.tagName).toBe(
+        "BUTTON"
+      );
+      const buttons = plugin.resizer?.querySelectorAll(".btn") ?? [];
+      expect(buttons.length).toBeGreaterThan(0);
+      buttons.forEach((btn) => expect(btn.tagName).toBe("BUTTON"));
+      expect(plugin.resizer?.querySelectorAll("a").length).toBe(0);
+    });
+
+    it("exposes accessible names/roles for the handler, toolbar, and width input", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container);
+
+      const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
+      expect(handler.getAttribute("aria-label")).toContain("arrow keys");
+
+      const toolbar = plugin.resizer?.querySelector(".toolbar") as HTMLElement;
+      expect(toolbar.getAttribute("role")).toBe("toolbar");
+      expect(toolbar.getAttribute("aria-label")).toBeTruthy();
+
+      const input = plugin.resizer?.querySelector(
+        'input[data-type="width"]'
+      ) as HTMLElement;
+      expect(input.getAttribute("aria-label")).toBeTruthy();
+    });
+
+    it("moves focus onto the handler once the overlay activates", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container);
+
+      expect(document.activeElement).toBe(
+        plugin.resizer?.querySelector(".handler")
+      );
+    });
+
+    it("does not steal focus when __autoFocus is explicitly disabled", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      const other = document.createElement("input");
+      document.body.appendChild(other);
+      other.focus();
+
+      createPlugin(target, container, { __autoFocus: false });
+
+      expect(document.activeElement).toBe(other);
+    });
+
+    it("resizes by one pixel per arrow key press on the focused handler", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      stubGeometry(target, { width: 100, height: 80 });
+
+      const plugin = createPlugin(target, container);
+      const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
+
+      handler.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })
+      );
+
+      expect(target.style.width).toBe("101px");
+      expect(target.style.height).toBe("80px");
+    });
+
+    it("resizes by a 10px step when Shift is held", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      stubGeometry(target, { width: 100, height: 80 });
+
+      const plugin = createPlugin(target, container);
+      const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
+
+      handler.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "ArrowDown",
+          shiftKey: true,
+          bubbles: true,
+        })
+      );
+
+      expect(target.style.height).toBe("90px");
+    });
+
+    it("preserves the aspect ratio when Alt is held during a keyboard resize", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      stubGeometry(target, { width: 100, height: 50 });
+
+      const plugin = createPlugin(target, container);
+      const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
+
+      handler.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "ArrowRight",
+          altKey: true,
+          shiftKey: true,
+          bubbles: true,
+        })
+      );
+
+      // width grows by the 10px shift step to 110, ratio 50/100 = 0.5 -> height 55
+      expect(target.style.width).toBe("110px");
+      expect(target.style.height).toBe("55px");
+    });
+
+    it("restores the original size when 0 is pressed on the handler", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      target.style.width = "300px";
+      target.style.height = "200px";
+
+      const plugin = createPlugin(target, container);
+      const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
+
+      handler.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "0", bubbles: true })
+      );
+
+      expect(target.style.width).toBe("auto");
+      expect(target.style.height).toBe("auto");
+    });
+
+    it("closes the overlay when Escape is pressed on the handler", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container);
+      const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
+
+      // Escape re-uses the "outside pointerdown" close mechanism, which is
+      // wired up at the QuillResizeModule level (main.ts), not inside
+      // ResizePlugin itself. Simulate that listener here to verify the
+      // Escape handler dispatches the expected document-level event.
+      const outsideHandler = vi.fn();
+      document.addEventListener("pointerdown", outsideHandler);
+
+      handler.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+      );
+
+      expect(outsideHandler).toHaveBeenCalledTimes(1);
+      document.removeEventListener("pointerdown", outsideHandler);
+    });
+
+    it("ignores keydown events that don't originate from the handler", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      stubGeometry(target, { width: 100, height: 80 });
+
+      const plugin = createPlugin(target, container);
+      const toolbar = plugin.resizer?.querySelector(".toolbar") as HTMLElement;
+
+      toolbar.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })
+      );
+
+      expect(target.style.width).toBe("");
+    });
+  });
 });

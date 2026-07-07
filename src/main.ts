@@ -130,11 +130,18 @@ function QuillResizeModule(
       trackedIframes.add(item);
       IframeOnClick.track(item, () => {
         resizeTarge = item;
-        resizePlugin = new ResizePlugin(
-          item,
-          container.parentElement as HTMLElement,
-          pluginOptions
-        );
+        resizePlugin = new ResizePlugin(item, container.parentElement as HTMLElement, {
+          ...pluginOptions,
+          // Don't steal focus onto the resize handle here: this callback
+          // fires from IframeClick's polling loop, which itself relies on
+          // `document.activeElement === iframe` to know the iframe is
+          // still the active target. Moving focus away immediately after
+          // construction would make that check think focus was lost,
+          // causing it to re-run this callback every poll tick instead of
+          // once per focus. img/video (activated via a plain "click", not
+          // a focus-polling loop) don't have this constraint.
+          __autoFocus: false,
+        });
       });
     });
   };

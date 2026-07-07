@@ -44,23 +44,32 @@ interface ResizePluginOption {
    * meant to be provided directly by consumers.
    */
   __quillInstance?: any;
+  /**
+   * Internal only: whether to move focus onto the resize handle once the
+   * overlay activates. Set to `false` by QuillResizeModule for iframes
+   * tracked via IframeClick's focus-polling loop, since that loop uses
+   * `document.activeElement === iframe` to detect the iframe is still
+   * active — auto-focusing the handle would immediately look like a focus
+   * loss to it. Not meant to be provided directly by consumers.
+   */
+  __autoFocus?: boolean;
   [index: string]: any;
 }
 const template = `
-<div class="handler" title="{0}"></div>
-<span class="size-label"></span>
-<div class="toolbar">
+<button type="button" class="handler" title="{0}" aria-label="{6}"></button>
+<span class="size-label" aria-hidden="true"></span>
+<div class="toolbar" role="toolbar" aria-label="{7}">
   <div class="group" data-group="size">
-    <a class="btn" data-type="width" data-styles="width:100%">100%</a>
-    <a class="btn" data-type="width" data-styles="width:50%">50%</a>
-    <span class="input-wrapper"><input data-type="width" maxlength="3" /><span class="suffix">%</span><span class="tooltip">{5}</span></span>
-    <a class="btn" data-type="width" data-styles="width:auto; height:auto;">{4}</a>
+    <button type="button" class="btn" data-type="width" data-styles="width:100%">100%</button>
+    <button type="button" class="btn" data-type="width" data-styles="width:50%">50%</button>
+    <span class="input-wrapper"><input type="text" data-type="width" maxlength="3" aria-label="{5}" /><span class="suffix">%</span><span class="tooltip">{5}</span></span>
+    <button type="button" class="btn" data-type="width" data-styles="width:auto; height:auto;">{4}</button>
   </div>
   <div class="group" data-group="align">
-    <a class="btn" data-type="align" data-styles="float:left">{1}</a>
-    <a class="btn" data-type="align" data-styles="display:block;margin:auto;">{2}</a>
-    <a class="btn" data-type="align" data-styles="float:right;">{3}</a>
-    <a class="btn" data-type="align" data-styles="">{4}</a>
+    <button type="button" class="btn" data-type="align" data-styles="float:left">{1}</button>
+    <button type="button" class="btn" data-type="align" data-styles="display:block;margin:auto;">{2}</button>
+    <button type="button" class="btn" data-type="align" data-styles="float:right;">{3}</button>
+    <button type="button" class="btn" data-type="align" data-styles="">{4}</button>
   </div>
 </div>
 `;
@@ -99,8 +108,19 @@ class ResizePlugin {
     this.startResize = this.startResize.bind(this);
     this.toolbarClick = this.toolbarClick.bind(this);
     this.toolbarInputChange = this.toolbarInputChange.bind(this);
+    this.onKeyDown = this.onKeyDown.bind(this);
     this.onScroll = () => this.positionResizerToTarget(this.resizeTarget);
     this.bindEvents();
+
+    // Move focus onto the resize handle whenever the overlay activates
+    // (or re-targets), so a keyboard user who reached it — via a click, or
+    // via Tab if it was already open — can immediately resize with the
+    // arrow keys instead of being stuck needing a mouse.
+    if (this.options?.__autoFocus !== false) {
+      this.resizer
+        ?.querySelector<HTMLElement>(".handler")
+        ?.focus?.({ preventScroll: true });
+    }
   }
 
   initResizer() {
@@ -116,7 +136,9 @@ class ResizePlugin {
         this.i18n.findLabel("center"),
         this.i18n.findLabel("floatRight"),
         this.i18n.findLabel("restore"),
-        this.i18n.findLabel("inputTip")
+        this.i18n.findLabel("inputTip"),
+        this.i18n.findLabel("handlerLabel"),
+        this.i18n.findLabel("toolbarLabel")
       );
       this.container.appendChild(resizer);
     }
@@ -233,6 +255,7 @@ class ResizePlugin {
       this.resizer.addEventListener("pointerdown", this.startResize);
       this.resizer.addEventListener("click", this.toolbarClick);
       this.resizer.addEventListener("change", this.toolbarInputChange);
+      this.resizer.addEventListener("keydown", this.onKeyDown);
     }
     window.addEventListener("pointerup", this.endResize);
     window.addEventListener("pointercancel", this.endResize);
@@ -244,6 +267,68 @@ class ResizePlugin {
     // its DOM nodes) forever once the resizer is torn down.
     this.scrollParent = getScrollParent(this.resizeTarget);
     this.scrollParent?.addEventListener("scroll", this.onScroll);
+  }
+  /**
+   * Keyboard equivalent of dragging the resize handle, so the overlay can
+   * be operated without a mouse/touch pointer once it has focus:
+   *  - Arrow keys resize by a small step (bigger with Shift held).
+   *  - Alt+Arrow preserves the original aspect ratio, mirroring the
+   *    existing Alt-drag behavior.
+   *  - "0" restores the original size (same action as the toolbar's
+   *    restore button).
+   *  - Escape closes the overlay, by simulating the same "pointerdown
+   *    outside the target" interaction that main.ts already listens for
+   *    and uses to tear the overlay down — reusing that single, tested
+   *    code path instead of duplicating close/cleanup logic here.
+   */
+  onKeyDown(e: KeyboardEvent) {
+    const target = e.target as HTMLElement;
+    if (!target.classList.contains("handler")) {
+      return;
+    }
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      document.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      return;
+    }
+
+    if (e.key === "0") {
+      e.preventDefault();
+      this._setStylesForToolbar("width", "width:auto; height:auto;");
+      return;
+    }
+
+    const arrowDeltas: Record<string, [number, number]> = {
+      ArrowUp: [0, -1],
+      ArrowDown: [0, 1],
+      ArrowLeft: [-1, 0],
+      ArrowRight: [1, 0],
+    };
+    const delta = arrowDeltas[e.key];
+    if (!delta) {
+      return;
+    }
+    e.preventDefault();
+
+    const step = e.shiftKey ? 10 : 1;
+    const width = this.resizeTarget.clientWidth + delta[0] * step;
+    let height = this.resizeTarget.clientHeight + delta[1] * step;
+
+    if (e.altKey) {
+      const originSize = this.resizeTarget.originSize as Size;
+      const rate: number = originSize.height / originSize.width;
+      height = rate * width;
+    }
+
+    this.resizeTarget.style.setProperty("width", Math.max(width, 30) + "px");
+    this.resizeTarget.style.setProperty(
+      "height",
+      Math.max(height, 30) + "px"
+    );
+    this.positionResizerToTarget(this.resizeTarget);
+    this._syncPersistence();
+    this.options?.onChange?.(this.resizeTarget);
   }
   _setStylesForToolbar(type: string, styles: string | undefined) {
     const storeKey = `_styles_${type}`;

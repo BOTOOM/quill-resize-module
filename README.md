@@ -12,6 +12,8 @@ A modern, secure module for the Quill rich text editor that allows you to resize
 - 🖼️ **Image Resizing** - Resize images with drag handles
 - 🎥 **Video Resizing** - Resize videos maintaining aspect ratio
 - 📱 **Responsive Design** - Works on all devices
+- 👆 **Touch & Pointer Support** - Unified pointer events for mouse, touch, and pen
+- ⌨️ **Keyboard Accessible** - Real `<button>` controls, focus management, and keyboard shortcuts
 - 🌐 **Multi-language Support** - Customizable locale options
 - 🔒 **Security First** - Zero vulnerabilities, modern dependencies
 - ⚡ **Performance Optimized** - Lightweight and fast
@@ -153,6 +155,24 @@ const quill = new Quill("#editor", {
   },
 });
 ```
+
+## ♿ Accessibility & Keyboard Shortcuts
+
+The resize handle and every toolbar control are real `<button>` elements
+(not anchors), so they are reachable and operable with a keyboard once
+the overlay is active, and are announced correctly by screen readers.
+When the overlay activates, focus moves to the resize handle automatically:
+
+| Shortcut | Action |
+|----------|--------|
+| Arrow keys | Resize by 1px |
+| Shift + Arrow keys | Resize by 10px |
+| Alt + Arrow keys | Resize while keeping the original aspect ratio |
+| `0` | Restore the original size |
+| `Escape` | Close the overlay |
+
+Touch and pen input are supported through Pointer Events, and the resize
+handle has an enlarged (invisible) hit area for touch screens.
 
 ## 🐛 Bug Fixes & Security
 
