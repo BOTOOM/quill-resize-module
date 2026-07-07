@@ -73,6 +73,7 @@ class ResizePlugin {
   options: any;
   private scrollParent: Element | null = null;
   private onScroll: () => void;
+  private activePointerId: number | null = null;
 
   constructor(
     resizeTarget: ResizeElement,
@@ -225,12 +226,17 @@ class ResizePlugin {
 
   bindEvents() {
     if (this.resizer !== null) {
-      this.resizer.addEventListener("mousedown", this.startResize);
+      // Pointer events unify mouse, touch, and pen input behind a single
+      // API (no separate touchstart/touchmove/touchend handlers needed),
+      // and fire immediately for touch (unlike "click", which historically
+      // waits for touchend on some browsers).
+      this.resizer.addEventListener("pointerdown", this.startResize);
       this.resizer.addEventListener("click", this.toolbarClick);
       this.resizer.addEventListener("change", this.toolbarInputChange);
     }
-    window.addEventListener("mouseup", this.endResize);
-    window.addEventListener("mousemove", this.resizing);
+    window.addEventListener("pointerup", this.endResize);
+    window.addEventListener("pointercancel", this.endResize);
+    window.addEventListener("pointermove", this.resizing);
 
     // Add scroll parent detection for better positioning. The listener
     // reference is kept so destroy() can remove it again; without this the
@@ -280,27 +286,54 @@ class ResizePlugin {
       this._setStylesForToolbar(type, target?.dataset?.styles);
     }
   }
-  startResize(e: MouseEvent) {
+  startResize(e: PointerEvent) {
     const target: HTMLElement = e.target as HTMLElement;
-    if (target.classList.contains("handler") && e.which === 1) {
+    // `button === 0` matches both the primary mouse button and the primary
+    // contact point for touch/pen pointers (their `button` is 0 on
+    // pointerdown), so this single check replaces the old mouse-only
+    // `e.which === 1` test.
+    if (target.classList.contains("handler") && e.button === 0) {
       this.startResizePosition = {
         left: e.clientX,
         top: e.clientY,
         width: this.resizeTarget.clientWidth,
         height: this.resizeTarget.clientHeight,
       };
+      this.activePointerId = e.pointerId;
+      // Pointer capture keeps subsequent pointermove/pointerup events
+      // targeted correctly even if the finger/cursor leaves the small
+      // handler hit area mid-drag — important on touch screens where fast
+      // drags easily overshoot a 10px handle. Not implemented in jsdom, so
+      // this is feature-detected rather than called unconditionally.
+      if (typeof target.setPointerCapture === "function") {
+        target.setPointerCapture(e.pointerId);
+      }
     }
   }
-  endResize() {
+  endResize(e?: PointerEvent) {
     const wasResizing = this.startResizePosition !== null;
     this.startResizePosition = null;
+    if (
+      e &&
+      this.activePointerId !== null &&
+      typeof (e.target as HTMLElement)?.releasePointerCapture === "function"
+    ) {
+      try {
+        (e.target as HTMLElement).releasePointerCapture(this.activePointerId);
+      } catch {
+        // Ignore — capture may already have been released by the browser
+        // (e.g. on pointercancel) before we get here.
+      }
+    }
+    this.activePointerId = null;
     if (wasResizing) {
       this._syncPersistence();
     }
     this.options?.onChange?.(this.resizeTarget);
   }
-  resizing(e: MouseEvent) {
+  resizing(e: PointerEvent) {
     if (!this.startResizePosition) return;
+
     const deltaX: number = e.clientX - this.startResizePosition.left;
     const deltaY: number = e.clientY - this.startResizePosition.top;
     let width = this.startResizePosition.width;
@@ -321,8 +354,9 @@ class ResizePlugin {
 
   destroy() {
     this.container.removeChild(this.resizer as HTMLElement);
-    window.removeEventListener("mouseup", this.endResize);
-    window.removeEventListener("mousemove", this.resizing);
+    window.removeEventListener("pointerup", this.endResize);
+    window.removeEventListener("pointercancel", this.endResize);
+    window.removeEventListener("pointermove", this.resizing);
     this.scrollParent?.removeEventListener("scroll", this.onScroll);
     this.scrollParent = null;
     this.resizer = null;

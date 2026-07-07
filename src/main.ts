@@ -140,7 +140,7 @@ function QuillResizeModule(
   };
   quill.on("text-change", onTextChange);
 
-  const onOutsideMouseDown = (e: Event) => {
+  const onOutsidePointerDown = (e: Event) => {
     const target = e.target as HTMLElement;
     if (
       target !== resizeTarge &&
@@ -151,7 +151,10 @@ function QuillResizeModule(
       resizeTarge = null;
     }
   };
-  document.addEventListener("mousedown", onOutsideMouseDown, {
+  // "pointerdown" (rather than "mousedown") fires immediately for mouse,
+  // touch, and pen alike, so tapping outside the active media on a touch
+  // device closes the overlay just as promptly as a mouse click does.
+  document.addEventListener("pointerdown", onOutsidePointerDown, {
     capture: true,
   });
 
@@ -166,7 +169,7 @@ function QuillResizeModule(
     destroy() {
       container.removeEventListener("click", onContainerClick);
       quill.off?.("text-change", onTextChange);
-      document.removeEventListener("mousedown", onOutsideMouseDown, {
+      document.removeEventListener("pointerdown", onOutsidePointerDown, {
         capture: true,
       } as EventListenerOptions);
       resizePlugin?.destroy?.();

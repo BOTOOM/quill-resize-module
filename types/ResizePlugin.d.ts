@@ -50,6 +50,7 @@ declare class ResizePlugin {
     options: any;
     private scrollParent;
     private onScroll;
+    private activePointerId;
     constructor(resizeTarget: ResizeElement, container: HTMLElement, options?: ResizePluginOption);
     initResizer(): void;
     /**
@@ -71,9 +72,9 @@ declare class ResizePlugin {
     _syncPersistence(): void;
     toolbarInputChange(e: Event): void;
     toolbarClick(e: MouseEvent): void;
-    startResize(e: MouseEvent): void;
-    endResize(): void;
-    resizing(e: MouseEvent): void;
+    startResize(e: PointerEvent): void;
+    endResize(e?: PointerEvent): void;
+    resizing(e: PointerEvent): void;
     destroy(): void;
     /**
      * @deprecated Use destroy() instead. Kept as an alias for backward

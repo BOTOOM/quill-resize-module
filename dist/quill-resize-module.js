@@ -78,7 +78,7 @@
       }
     }
 
-    var css_248z = "#editor-resizer {\n  position: absolute;\n  border: 1px dashed #fff;\n  background-color: rgba(0, 0, 0, 0.5);\n}\n#editor-resizer .handler {\n  position: absolute;\n  right: -5px;\n  bottom: -5px;\n  width: 10px;\n  height: 10px;\n  border: 1px solid #333;\n  background-color: rgba(255, 255, 255, 0.8);\n  cursor: nwse-resize;\n  user-select: none;\n}\n#editor-resizer .size-label {\n  position: absolute;\n  left: 50%;\n  bottom: -1.6em;\n  transform: translateX(-50%);\n  padding: 0.1em 0.5em;\n  border-radius: 3px;\n  background-color: rgba(0, 0, 0, 0.65);\n  color: #fff;\n  font-size: 0.75em;\n  white-space: nowrap;\n  user-select: none;\n  pointer-events: none;\n}\n#editor-resizer .toolbar {\n  position: absolute;\n  top: -3em;\n  left: 50%;\n  min-width: 200px;\n  /* Minimum width for small objects */\n  max-width: 400px;\n  /* Maximum width for very small objects */\n  padding: 0.5em;\n  border: 1px solid #fff;\n  border-radius: 3px;\n  background-color: #fff;\n  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);\n  transform: translateX(-50%);\n  z-index: 1000;\n  white-space: normal;\n  /* Allow text wrapping */\n  /* Responsive positioning for very small objects */\n}\n#editor-resizer .toolbar.small-object {\n  min-width: 250px;\n  top: -4em;\n}\n#editor-resizer .toolbar.very-small-object {\n  min-width: 300px;\n  top: -5em;\n  left: 0;\n  transform: none;\n}\n#editor-resizer .toolbar .group {\n  display: flex;\n  border: 1px solid #aaa;\n  border-radius: 6px;\n  overflow: hidden;\n  white-space: nowrap;\n  text-align: center;\n  flex-wrap: wrap;\n  /* Allow wrapping for very small objects */\n  /* Input wrapper improvements */\n}\n#editor-resizer .toolbar .group:not(:first-child) {\n  margin-top: 0.5em;\n}\n#editor-resizer .toolbar .group .btn {\n  flex: 1 0 auto;\n  /* Allow buttons to shrink */\n  min-width: 40px;\n  /* Minimum button width */\n  text-align: center;\n  padding: 0 0.3rem;\n  /* Reduced padding */\n  display: inline-block;\n  color: rgba(0, 0, 0, 0.65);\n  vertical-align: top;\n  line-height: 1.8;\n  /* Slightly reduced line height */\n  user-select: none;\n  font-size: 0.85em;\n  /* Smaller font for tight spaces */\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  /* Tooltip for truncated text */\n}\n#editor-resizer .toolbar .group .btn.btn-group {\n  padding: 0;\n  display: inline-flex;\n  line-height: 1.8em;\n  min-width: 60px;\n}\n#editor-resizer .toolbar .group .btn.btn-group .inner-btn {\n  flex: 1 0 0;\n  font-size: 1.5em;\n  /* Smaller icons */\n  width: 50%;\n  cursor: pointer;\n}\n#editor-resizer .toolbar .group .btn.btn-group .inner-btn:first-child {\n  border-right: 1px solid #ddd;\n}\n#editor-resizer .toolbar .group .btn.btn-group .inner-btn:active {\n  transform: scale(0.8);\n}\n#editor-resizer .toolbar .group .btn:not(:last-child) {\n  border-right: 1px solid #bbb;\n}\n#editor-resizer .toolbar .group .btn:not(.btn-group):active {\n  background-color: rgba(0, 0, 0, 0.1);\n}\n#editor-resizer .toolbar .group .btn:hover {\n  position: relative;\n}\n#editor-resizer .toolbar .group .btn:hover::after {\n  content: attr(data-full-text);\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  transform: translateX(-50%);\n  background-color: #333;\n  color: white;\n  padding: 4px 8px;\n  border-radius: 4px;\n  font-size: 12px;\n  white-space: nowrap;\n  z-index: 1001;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.3s;\n}\n#editor-resizer .toolbar .group .btn:hover:hover::after {\n  opacity: 1;\n}\n#editor-resizer .toolbar .group .input-wrapper {\n  position: relative;\n  display: inline-flex;\n  align-items: center;\n  min-width: 60px;\n  flex: 1 0 auto;\n}\n#editor-resizer .toolbar .group .input-wrapper input {\n  width: 40px;\n  text-align: center;\n  border: 1px solid #ddd;\n  border-radius: 2px;\n  padding: 2px 4px;\n  font-size: 0.85em;\n}\n#editor-resizer .toolbar .group .input-wrapper .suffix {\n  font-size: 0.75em;\n  margin-left: 2px;\n}\n#editor-resizer .toolbar .group .input-wrapper .tooltip {\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  transform: translateX(-50%);\n  background-color: #333;\n  color: white;\n  padding: 4px 8px;\n  border-radius: 4px;\n  font-size: 11px;\n  white-space: nowrap;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.3s;\n  z-index: 1001;\n}\n#editor-resizer .toolbar .group .input-wrapper:hover .tooltip {\n  opacity: 1;\n}\n#editor-resizer .last-item {\n  margin-right: 5px;\n}\n#editor-resizer .showSize {\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  padding: 0.1em;\n  border: 1px solid rgba(255, 255, 255, 0.8);\n  border-radius: 2px;\n  background-color: rgba(255, 255, 255, 0.8);\n  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);\n  transform: translateX(-50%);\n  font-size: 0.8em;\n  /* Smaller font for tight spaces */\n}\n";
+    var css_248z = "#editor-resizer {\n  position: absolute;\n  border: 1px dashed #fff;\n  background-color: rgba(0, 0, 0, 0.5);\n}\n#editor-resizer .handler {\n  position: absolute;\n  right: -5px;\n  bottom: -5px;\n  width: 10px;\n  height: 10px;\n  border: 1px solid #333;\n  background-color: rgba(255, 255, 255, 0.8);\n  cursor: nwse-resize;\n  user-select: none;\n  /* Prevent the browser's native touch scrolling/panning gestures from\n       competing with a pointer-based resize drag on touch screens. */\n  touch-action: none;\n  /* The visible handle is intentionally small so it doesn't obscure the\n       media being resized, but a 10x10px target is far below the ~44px\n       minimum recommended for touch input. This invisible pseudo-element\n       enlarges the actual hit/pointer area without changing how the\n       handle looks; pointer/touch events anywhere within it still report\n       `.handler` as their target since pseudo-elements aren't\n       independently targetable. */\n}\n#editor-resizer .handler::before {\n  content: \"\";\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  width: 40px;\n  height: 40px;\n  transform: translate(-50%, -50%);\n}\n#editor-resizer .size-label {\n  position: absolute;\n  left: 50%;\n  bottom: -1.6em;\n  transform: translateX(-50%);\n  padding: 0.1em 0.5em;\n  border-radius: 3px;\n  background-color: rgba(0, 0, 0, 0.65);\n  color: #fff;\n  font-size: 0.75em;\n  white-space: nowrap;\n  user-select: none;\n  pointer-events: none;\n}\n#editor-resizer .toolbar {\n  position: absolute;\n  top: -3em;\n  left: 50%;\n  min-width: 200px;\n  /* Minimum width for small objects */\n  max-width: 400px;\n  /* Maximum width for very small objects */\n  padding: 0.5em;\n  border: 1px solid #fff;\n  border-radius: 3px;\n  background-color: #fff;\n  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);\n  transform: translateX(-50%);\n  z-index: 1000;\n  white-space: normal;\n  /* Allow text wrapping */\n  /* Responsive positioning for very small objects */\n}\n#editor-resizer .toolbar.small-object {\n  min-width: 250px;\n  top: -4em;\n}\n#editor-resizer .toolbar.very-small-object {\n  min-width: 300px;\n  top: -5em;\n  left: 0;\n  transform: none;\n}\n#editor-resizer .toolbar .group {\n  display: flex;\n  border: 1px solid #aaa;\n  border-radius: 6px;\n  overflow: hidden;\n  white-space: nowrap;\n  text-align: center;\n  flex-wrap: wrap;\n  /* Allow wrapping for very small objects */\n  /* Input wrapper improvements */\n}\n#editor-resizer .toolbar .group:not(:first-child) {\n  margin-top: 0.5em;\n}\n#editor-resizer .toolbar .group .btn {\n  flex: 1 0 auto;\n  /* Allow buttons to shrink */\n  min-width: 40px;\n  /* Minimum button width */\n  text-align: center;\n  padding: 0 0.3rem;\n  /* Reduced padding */\n  display: inline-block;\n  color: rgba(0, 0, 0, 0.65);\n  vertical-align: top;\n  line-height: 1.8;\n  /* Slightly reduced line height */\n  user-select: none;\n  font-size: 0.85em;\n  /* Smaller font for tight spaces */\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  /* Tooltip for truncated text */\n}\n#editor-resizer .toolbar .group .btn.btn-group {\n  padding: 0;\n  display: inline-flex;\n  line-height: 1.8em;\n  min-width: 60px;\n}\n#editor-resizer .toolbar .group .btn.btn-group .inner-btn {\n  flex: 1 0 0;\n  font-size: 1.5em;\n  /* Smaller icons */\n  width: 50%;\n  cursor: pointer;\n}\n#editor-resizer .toolbar .group .btn.btn-group .inner-btn:first-child {\n  border-right: 1px solid #ddd;\n}\n#editor-resizer .toolbar .group .btn.btn-group .inner-btn:active {\n  transform: scale(0.8);\n}\n#editor-resizer .toolbar .group .btn:not(:last-child) {\n  border-right: 1px solid #bbb;\n}\n#editor-resizer .toolbar .group .btn:not(.btn-group):active {\n  background-color: rgba(0, 0, 0, 0.1);\n}\n#editor-resizer .toolbar .group .btn:hover {\n  position: relative;\n}\n#editor-resizer .toolbar .group .btn:hover::after {\n  content: attr(data-full-text);\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  transform: translateX(-50%);\n  background-color: #333;\n  color: white;\n  padding: 4px 8px;\n  border-radius: 4px;\n  font-size: 12px;\n  white-space: nowrap;\n  z-index: 1001;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.3s;\n}\n#editor-resizer .toolbar .group .btn:hover:hover::after {\n  opacity: 1;\n}\n#editor-resizer .toolbar .group .input-wrapper {\n  position: relative;\n  display: inline-flex;\n  align-items: center;\n  min-width: 60px;\n  flex: 1 0 auto;\n}\n#editor-resizer .toolbar .group .input-wrapper input {\n  width: 40px;\n  text-align: center;\n  border: 1px solid #ddd;\n  border-radius: 2px;\n  padding: 2px 4px;\n  font-size: 0.85em;\n}\n#editor-resizer .toolbar .group .input-wrapper .suffix {\n  font-size: 0.75em;\n  margin-left: 2px;\n}\n#editor-resizer .toolbar .group .input-wrapper .tooltip {\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  transform: translateX(-50%);\n  background-color: #333;\n  color: white;\n  padding: 4px 8px;\n  border-radius: 4px;\n  font-size: 11px;\n  white-space: nowrap;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.3s;\n  z-index: 1001;\n}\n#editor-resizer .toolbar .group .input-wrapper:hover .tooltip {\n  opacity: 1;\n}\n#editor-resizer .last-item {\n  margin-right: 5px;\n}\n#editor-resizer .showSize {\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  padding: 0.1em;\n  border: 1px solid rgba(255, 255, 255, 0.8);\n  border-radius: 2px;\n  background-color: rgba(255, 255, 255, 0.8);\n  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);\n  transform: translateX(-50%);\n  font-size: 0.8em;\n  /* Smaller font for tight spaces */\n}\n";
     styleInject(css_248z);
 
     var I18n = /** @class */ (function () {
@@ -363,6 +363,7 @@
             this.resizer = null;
             this.startResizePosition = null;
             this.scrollParent = null;
+            this.activePointerId = null;
             this.i18n = new I18n((options === null || options === void 0 ? void 0 : options.locale) || defaultLocale);
             this.options = options;
             this.resizeTarget = resizeTarget;
@@ -474,12 +475,17 @@
         ResizePlugin.prototype.bindEvents = function () {
             var _a;
             if (this.resizer !== null) {
-                this.resizer.addEventListener("mousedown", this.startResize);
+                // Pointer events unify mouse, touch, and pen input behind a single
+                // API (no separate touchstart/touchmove/touchend handlers needed),
+                // and fire immediately for touch (unlike "click", which historically
+                // waits for touchend on some browsers).
+                this.resizer.addEventListener("pointerdown", this.startResize);
                 this.resizer.addEventListener("click", this.toolbarClick);
                 this.resizer.addEventListener("change", this.toolbarInputChange);
             }
-            window.addEventListener("mouseup", this.endResize);
-            window.addEventListener("mousemove", this.resizing);
+            window.addEventListener("pointerup", this.endResize);
+            window.addEventListener("pointercancel", this.endResize);
+            window.addEventListener("pointermove", this.resizing);
             // Add scroll parent detection for better positioning. The listener
             // reference is kept so destroy() can remove it again; without this the
             // scroll parent would keep a dangling reference to this instance (and
@@ -532,23 +538,48 @@
         };
         ResizePlugin.prototype.startResize = function (e) {
             var target = e.target;
-            if (target.classList.contains("handler") && e.which === 1) {
+            // `button === 0` matches both the primary mouse button and the primary
+            // contact point for touch/pen pointers (their `button` is 0 on
+            // pointerdown), so this single check replaces the old mouse-only
+            // `e.which === 1` test.
+            if (target.classList.contains("handler") && e.button === 0) {
                 this.startResizePosition = {
                     left: e.clientX,
                     top: e.clientY,
                     width: this.resizeTarget.clientWidth,
                     height: this.resizeTarget.clientHeight,
                 };
+                this.activePointerId = e.pointerId;
+                // Pointer capture keeps subsequent pointermove/pointerup events
+                // targeted correctly even if the finger/cursor leaves the small
+                // handler hit area mid-drag — important on touch screens where fast
+                // drags easily overshoot a 10px handle. Not implemented in jsdom, so
+                // this is feature-detected rather than called unconditionally.
+                if (typeof target.setPointerCapture === "function") {
+                    target.setPointerCapture(e.pointerId);
+                }
             }
         };
-        ResizePlugin.prototype.endResize = function () {
-            var _a, _b;
+        ResizePlugin.prototype.endResize = function (e) {
+            var _a, _b, _c;
             var wasResizing = this.startResizePosition !== null;
             this.startResizePosition = null;
+            if (e &&
+                this.activePointerId !== null &&
+                typeof ((_a = e.target) === null || _a === void 0 ? void 0 : _a.releasePointerCapture) === "function") {
+                try {
+                    e.target.releasePointerCapture(this.activePointerId);
+                }
+                catch (_d) {
+                    // Ignore — capture may already have been released by the browser
+                    // (e.g. on pointercancel) before we get here.
+                }
+            }
+            this.activePointerId = null;
             if (wasResizing) {
                 this._syncPersistence();
             }
-            (_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.onChange) === null || _b === void 0 ? void 0 : _b.call(_a, this.resizeTarget);
+            (_c = (_b = this.options) === null || _b === void 0 ? void 0 : _b.onChange) === null || _c === void 0 ? void 0 : _c.call(_b, this.resizeTarget);
         };
         ResizePlugin.prototype.resizing = function (e) {
             if (!this.startResizePosition)
@@ -571,8 +602,9 @@
         ResizePlugin.prototype.destroy = function () {
             var _a;
             this.container.removeChild(this.resizer);
-            window.removeEventListener("mouseup", this.endResize);
-            window.removeEventListener("mousemove", this.resizing);
+            window.removeEventListener("pointerup", this.endResize);
+            window.removeEventListener("pointercancel", this.endResize);
+            window.removeEventListener("pointermove", this.resizing);
             (_a = this.scrollParent) === null || _a === void 0 ? void 0 : _a.removeEventListener("scroll", this.onScroll);
             this.scrollParent = null;
             this.resizer = null;
@@ -715,7 +747,7 @@
             });
         };
         quill.on("text-change", onTextChange);
-        var onOutsideMouseDown = function (e) {
+        var onOutsidePointerDown = function (e) {
             var _a, _b, _c;
             var target = e.target;
             if (target !== resizeTarge &&
@@ -725,7 +757,10 @@
                 resizeTarge = null;
             }
         };
-        document.addEventListener("mousedown", onOutsideMouseDown, {
+        // "pointerdown" (rather than "mousedown") fires immediately for mouse,
+        // touch, and pen alike, so tapping outside the active media on a touch
+        // device closes the overlay just as promptly as a mouse click does.
+        document.addEventListener("pointerdown", onOutsidePointerDown, {
             capture: true,
         });
         return {
@@ -740,7 +775,7 @@
                 var _a, _b;
                 container.removeEventListener("click", onContainerClick);
                 (_a = quill.off) === null || _a === void 0 ? void 0 : _a.call(quill, "text-change", onTextChange);
-                document.removeEventListener("mousedown", onOutsideMouseDown, {
+                document.removeEventListener("pointerdown", onOutsidePointerDown, {
                     capture: true,
                 });
                 (_b = resizePlugin === null || resizePlugin === void 0 ? void 0 : resizePlugin.destroy) === null || _b === void 0 ? void 0 : _b.call(resizePlugin);

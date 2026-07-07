@@ -87,7 +87,7 @@ describe("QuillResizeModule", () => {
     expect(wrapper.querySelector("#editor-resizer")).toBeNull();
   });
 
-  it("destroys the resizer when clicking outside the active target", () => {
+  it("destroys the resizer when a pointerdown happens outside the active target", () => {
     const { wrapper, root } = createEditor();
     const img = document.createElement("img");
     const outside = document.createElement("div");
@@ -99,12 +99,12 @@ describe("QuillResizeModule", () => {
     img.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(wrapper.querySelector("#editor-resizer")).not.toBeNull();
 
-    outside.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    outside.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
 
     expect(wrapper.querySelector("#editor-resizer")).toBeNull();
   });
 
-  it("keeps the resizer when the mousedown happens inside the overlay itself", () => {
+  it("keeps the resizer when the pointerdown happens inside the overlay itself", () => {
     const { wrapper, root } = createEditor();
     const img = document.createElement("img");
     root.appendChild(img);
@@ -115,7 +115,7 @@ describe("QuillResizeModule", () => {
     const resizer = wrapper.querySelector("#editor-resizer") as HTMLElement;
     expect(resizer).not.toBeNull();
 
-    resizer.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+    resizer.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
 
     expect(wrapper.querySelector("#editor-resizer")).not.toBeNull();
   });

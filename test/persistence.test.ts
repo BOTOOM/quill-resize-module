@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import Quill from "quill";
 import QuillResizeModule from "../src/main";
 import IframeClick from "../src/IframeClick";
-import { leftButtonMouseDown, makeEditable, stubGeometry } from "./testUtils";
+import { leftButtonPointerDown, makeEditable, stubGeometry } from "./testUtils";
 
 /**
  * Integration tests exercising the real `quill` package (not the duck-typed
@@ -142,9 +142,9 @@ describe("Quill-native persistence", () => {
     ) as HTMLElement;
     const handler = resizer.querySelector(".handler") as HTMLElement;
 
-    handler.dispatchEvent(leftButtonMouseDown({ clientX: 0, clientY: 0 }));
-    window.dispatchEvent(new MouseEvent("mousemove", { clientX: 40, clientY: 20 }));
-    window.dispatchEvent(new MouseEvent("mouseup"));
+    handler.dispatchEvent(leftButtonPointerDown({ clientX: 0, clientY: 0 }));
+    window.dispatchEvent(new PointerEvent("pointermove", { clientX: 40, clientY: 20 }));
+    window.dispatchEvent(new PointerEvent("pointerup"));
 
     const op = getImageOp(quill.getContents());
     expect(op?.attributes?.width).toBe("140px");

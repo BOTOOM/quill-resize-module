@@ -12,6 +12,25 @@
     background-color: rgba(255, 255, 255, 0.8);
     cursor: nwse-resize;
     user-select: none;
+    /* Prevent the browser's native touch scrolling/panning gestures from
+       competing with a pointer-based resize drag on touch screens. */
+    touch-action: none;
+    /* The visible handle is intentionally small so it doesn't obscure the
+       media being resized, but a 10x10px target is far below the ~44px
+       minimum recommended for touch input. This invisible pseudo-element
+       enlarges the actual hit/pointer area without changing how the
+       handle looks; pointer/touch events anywhere within it still report
+       `.handler` as their target since pseudo-elements aren't
+       independently targetable. */
+    &::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 40px;
+      height: 40px;
+      transform: translate(-50%, -50%);
+    }
   }
   .size-label {
     position: absolute;

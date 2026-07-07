@@ -226,6 +226,23 @@ Impacto:
 
 - Acerca el producto a lo que hoy ofrecen las mejores alternativas.
 
+**✅ Implementado**: `ResizePlugin` ahora usa `pointerdown`/`pointermove`/
+`pointerup`/`pointercancel` en lugar de `mousedown`/`mousemove`/`mouseup`,
+unificando mouse, touch y pen bajo la misma API (`src/ResizePlugin.ts`).
+El listener de "click fuera" en `src/main.ts` tambien pasa de `mousedown`
+a `pointerdown`, para que cerrar el overlay responda igual de rapido en
+touch que con mouse. Se agrega `setPointerCapture`/`releasePointerCapture`
+(con feature-detection, ya que jsdom no los implementa) para que el drag
+no se pierda si el puntero sale del pequeno `.handler` durante un touch
+rapido. En CSS se agrega `touch-action: none` al handle para evitar que el
+scroll nativo compita con el gesto de resize, y un `::before` invisible de
+40x40px amplia el area tactil real sin cambiar el tamano visual del
+handle (por debajo del minimo recomendado de ~44px si se usara solo el
+tamano visible de 10x10px). Pinch-to-resize se deja fuera de este alcance
+(anotado como posible extension futura, no bloquea el resto del plan).
+Cubierto por 3 tests nuevos (touch pointer, pointercancel cleanup,
+pointer capture) mas la migracion de los tests de drag existentes.
+
 ### 5. Accesibilidad y UX de teclado
 
 Objetivo:

@@ -51,12 +51,19 @@ export function makeEditable(el: HTMLElement): void {
 }
 
 /**
- * jsdom's MouseEvent does not derive `which` from `button`/init options, so
- * left-button checks (`e.which === 1`) never pass with a plain
- * `new MouseEvent(...)`. This builds a mousedown event and forces `which`.
+ * jsdom's PointerEvent does not default `button` for a synthetic
+ * pointerdown the way a real browser would for a mouse/touch primary
+ * contact, so this builds one with `button: 0` (primary button/contact)
+ * pre-set, plus a default `pointerId` since production code reads it for
+ * pointer capture.
  */
-export function leftButtonMouseDown(init: MouseEventInit = {}): MouseEvent {
-  const event = new MouseEvent("mousedown", { bubbles: true, ...init });
-  Object.defineProperty(event, "which", { configurable: true, value: 1 });
-  return event;
+export function leftButtonPointerDown(
+  init: PointerEventInit = {}
+): PointerEvent {
+  return new PointerEvent("pointerdown", {
+    bubbles: true,
+    button: 0,
+    pointerId: 1,
+    ...init,
+  });
 }

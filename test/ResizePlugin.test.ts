@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import ResizePlugin from "../src/ResizePlugin";
-import { leftButtonMouseDown, makeEditable, stubGeometry } from "./testUtils";
+import { leftButtonPointerDown, makeEditable, stubGeometry } from "./testUtils";
 
 function createContainer(): HTMLElement {
   const container = document.createElement("div");
@@ -13,7 +13,7 @@ function createTarget(): HTMLElement {
   return img;
 }
 
-// ResizePlugin.bindEvents() registers "mouseup"/"mousemove" listeners on
+// ResizePlugin.bindEvents() registers "pointerup"/"pointermove" listeners on
 // `window` for every instance and only removes them via destroy(). Track
 // every instance created in a test and destroy it afterwards, otherwise
 // listeners (and their closures over `options`) leak into later tests.
@@ -176,7 +176,7 @@ describe("ResizePlugin", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("resizes the target based on mouse drag deltas from the handler", () => {
+  it("resizes the target based on pointer drag deltas from the handler", () => {
     const container = createContainer();
     const target = createTarget();
     container.appendChild(target);
@@ -186,10 +186,10 @@ describe("ResizePlugin", () => {
     const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
 
     handler.dispatchEvent(
-      leftButtonMouseDown({ clientX: 0, clientY: 0 })
+      leftButtonPointerDown({ clientX: 0, clientY: 0 })
     );
     window.dispatchEvent(
-      new MouseEvent("mousemove", { clientX: 40, clientY: 20 })
+      new PointerEvent("pointermove", { clientX: 40, clientY: 20 })
     );
 
     expect(target.style.width).toBe("140px");
@@ -206,10 +206,10 @@ describe("ResizePlugin", () => {
     const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
 
     handler.dispatchEvent(
-      leftButtonMouseDown({ clientX: 0, clientY: 0 })
+      leftButtonPointerDown({ clientX: 0, clientY: 0 })
     );
     window.dispatchEvent(
-      new MouseEvent("mousemove", { clientX: -100, clientY: -100 })
+      new PointerEvent("pointermove", { clientX: -100, clientY: -100 })
     );
 
     expect(target.style.width).toBe("30px");
@@ -226,10 +226,10 @@ describe("ResizePlugin", () => {
     const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
 
     handler.dispatchEvent(
-      leftButtonMouseDown({ clientX: 0, clientY: 0 })
+      leftButtonPointerDown({ clientX: 0, clientY: 0 })
     );
     window.dispatchEvent(
-      new MouseEvent("mousemove", { clientX: 100, clientY: 0, altKey: true })
+      new PointerEvent("pointermove", { clientX: 100, clientY: 0, altKey: true })
     );
 
     // originSize ratio is height/width = 50/100 = 0.5, new width = 200
@@ -237,14 +237,14 @@ describe("ResizePlugin", () => {
     expect(target.style.height).toBe("100px");
   });
 
-  it("does nothing on mousemove before a drag has started", () => {
+  it("does nothing on pointermove before a drag has started", () => {
     const container = createContainer();
     const target = createTarget();
     container.appendChild(target);
 
     createPlugin(target, container);
     window.dispatchEvent(
-      new MouseEvent("mousemove", { clientX: 999, clientY: 999 })
+      new PointerEvent("pointermove", { clientX: 999, clientY: 999 })
     );
 
     expect(target.style.width).toBe("");
@@ -261,12 +261,82 @@ describe("ResizePlugin", () => {
     const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
 
     handler.dispatchEvent(
-      leftButtonMouseDown({ clientX: 0, clientY: 0 })
+      leftButtonPointerDown({ clientX: 0, clientY: 0 })
     );
-    window.dispatchEvent(new MouseEvent("mouseup"));
+    window.dispatchEvent(new PointerEvent("pointerup"));
 
     expect(onChange).toHaveBeenCalledWith(target);
     expect(plugin.startResizePosition).toBeNull();
+  });
+
+  it("resizes the target from a touch pointer the same way as a mouse pointer", () => {
+    const container = createContainer();
+    const target = createTarget();
+    container.appendChild(target);
+    stubGeometry(target, { width: 100, height: 80 });
+
+    const plugin = createPlugin(target, container);
+    const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
+
+    handler.dispatchEvent(
+      leftButtonPointerDown({
+        clientX: 0,
+        clientY: 0,
+        pointerType: "touch",
+        pointerId: 7,
+      })
+    );
+    window.dispatchEvent(
+      new PointerEvent("pointermove", { clientX: 40, clientY: 20 })
+    );
+
+    expect(target.style.width).toBe("140px");
+    expect(target.style.height).toBe("100px");
+  });
+
+  it("cleans up drag state on pointercancel, not just pointerup", () => {
+    const container = createContainer();
+    const target = createTarget();
+    container.appendChild(target);
+    const onChange = vi.fn();
+
+    const plugin = createPlugin(target, container, { onChange });
+    const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
+
+    handler.dispatchEvent(leftButtonPointerDown({ clientX: 0, clientY: 0 }));
+    expect(plugin.startResizePosition).not.toBeNull();
+
+    window.dispatchEvent(new PointerEvent("pointercancel"));
+
+    expect(plugin.startResizePosition).toBeNull();
+    expect(onChange).toHaveBeenCalledWith(target);
+  });
+
+  it("captures the pointer on the handler when a drag starts, if the browser supports it", () => {
+    const container = createContainer();
+    const target = createTarget();
+    container.appendChild(target);
+
+    const plugin = createPlugin(target, container);
+    const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
+    // jsdom does not implement setPointerCapture/releasePointerCapture, so
+    // stub them to verify the (feature-detected) call happens with real
+    // browser APIs without needing a real browser to run the test.
+    const setCapture = vi.fn();
+    const releaseCapture = vi.fn();
+    (handler as any).setPointerCapture = setCapture;
+    (handler as any).releasePointerCapture = releaseCapture;
+
+    handler.dispatchEvent(leftButtonPointerDown({ pointerId: 42 }));
+    expect(setCapture).toHaveBeenCalledWith(42);
+
+    const pointerUp = new PointerEvent("pointerup");
+    Object.defineProperty(pointerUp, "target", {
+      value: handler,
+      configurable: true,
+    });
+    window.dispatchEvent(pointerUp);
+    expect(releaseCapture).toHaveBeenCalledWith(42);
   });
 
   it("removes the overlay from the container on destroy()", () => {
