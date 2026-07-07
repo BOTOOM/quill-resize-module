@@ -359,8 +359,10 @@
     var template = "\n<div class=\"handler\" title=\"{0}\"></div>\n<div class=\"toolbar\">\n  <div class=\"group\">\n    <a class=\"btn\" data-type=\"width\" data-styles=\"width:100%\">100%</a>\n    <a class=\"btn\" data-type=\"width\" data-styles=\"width:50%\">50%</a>\n    <span class=\"input-wrapper\"><input data-type=\"width\" maxlength=\"3\" /><span class=\"suffix\">%</span><span class=\"tooltip\">{5}</span></span>\n    <a class=\"btn\" data-type=\"width\" data-styles=\"width:auto; height:auto;\">{4}</a>\n  </div>\n  <div class=\"group\">\n    <a class=\"btn\" data-type=\"align\" data-styles=\"float:left\">{1}</a>\n    <a class=\"btn\" data-type=\"align\" data-styles=\"display:block;margin:auto;\">{2}</a>\n    <a class=\"btn\" data-type=\"align\" data-styles=\"float:right;\">{3}</a>\n    <a class=\"btn\" data-type=\"align\" data-styles=\"\">{4}</a>\n  </div>\n</div>\n";
     var ResizePlugin = /** @class */ (function () {
         function ResizePlugin(resizeTarget, container, options) {
+            var _this = this;
             this.resizer = null;
             this.startResizePosition = null;
+            this.scrollParent = null;
             this.i18n = new I18n((options === null || options === void 0 ? void 0 : options.locale) || defaultLocale);
             this.options = options;
             this.resizeTarget = resizeTarget;
@@ -378,6 +380,7 @@
             this.startResize = this.startResize.bind(this);
             this.toolbarClick = this.toolbarClick.bind(this);
             this.toolbarInputChange = this.toolbarInputChange.bind(this);
+            this.onScroll = function () { return _this.positionResizerToTarget(_this.resizeTarget); };
             this.bindEvents();
         }
         ResizePlugin.prototype.initResizer = function () {
@@ -427,7 +430,6 @@
             }
         };
         ResizePlugin.prototype.bindEvents = function () {
-            var _this = this;
             var _a;
             if (this.resizer !== null) {
                 this.resizer.addEventListener("mousedown", this.startResize);
@@ -436,10 +438,12 @@
             }
             window.addEventListener("mouseup", this.endResize);
             window.addEventListener("mousemove", this.resizing);
-            // Add scroll parent detection for better positioning
-            (_a = getScrollParent(this.resizeTarget)) === null || _a === void 0 ? void 0 : _a.addEventListener("scroll", function () {
-                _this.positionResizerToTarget(_this.resizeTarget);
-            });
+            // Add scroll parent detection for better positioning. The listener
+            // reference is kept so destroy() can remove it again; without this the
+            // scroll parent would keep a dangling reference to this instance (and
+            // its DOM nodes) forever once the resizer is torn down.
+            this.scrollParent = getScrollParent(this.resizeTarget);
+            (_a = this.scrollParent) === null || _a === void 0 ? void 0 : _a.addEventListener("scroll", this.onScroll);
         };
         ResizePlugin.prototype._setStylesForToolbar = function (type, styles) {
             var _a, _b;
@@ -522,11 +526,22 @@
             this.resizeTarget.style.setProperty("height", Math.max(height, 30) + "px");
             this.positionResizerToTarget(this.resizeTarget);
         };
-        ResizePlugin.prototype.destory = function () {
+        ResizePlugin.prototype.destroy = function () {
+            var _a;
             this.container.removeChild(this.resizer);
             window.removeEventListener("mouseup", this.endResize);
             window.removeEventListener("mousemove", this.resizing);
+            (_a = this.scrollParent) === null || _a === void 0 ? void 0 : _a.removeEventListener("scroll", this.onScroll);
+            this.scrollParent = null;
             this.resizer = null;
+        };
+        /**
+         * @deprecated Use destroy() instead. Kept as an alias for backward
+         * compatibility with any code calling the previous (misspelled) method
+         * name directly.
+         */
+        ResizePlugin.prototype.destory = function () {
+            this.destroy();
         };
         return ResizePlugin;
     }());
@@ -553,6 +568,19 @@
                 this.interval = setInterval(function () {
                     IframeClick.checkClick();
                 }, this.resolution);
+            }
+        };
+        /**
+         * Stops tracking a single iframe (e.g. it was removed from the DOM or its
+         * owning Quill instance was destroyed). Stops the shared polling interval
+         * once no iframes are left, so destroying every Quill instance using this
+         * module leaves no dangling timers behind.
+         */
+        IframeClick.untrack = function (element) {
+            this.iframes = this.iframes.filter(function (item) { return item.element !== element; });
+            if (this.iframes.length === 0 && this.interval) {
+                clearInterval(this.interval);
+                this.interval = null;
             }
         };
         IframeClick.checkClick = function () {
@@ -618,39 +646,68 @@
         var container = quill.root;
         var resizeTarge;
         var resizePlugin;
+        var trackedIframes = new Set();
         // Enables width/height/align to persist through Quill Delta round trips
         // (getContents()/setContents()) instead of relying solely on inline
         // styles. No-ops for duck-typed/mock Quill instances that don't expose a
         // real Parchment-backed constructor.
         registerResizeFormats(quill.constructor);
         var pluginOptions = __assign(__assign({}, options), { __quillInstance: quill });
-        container.addEventListener("click", function (e) {
+        var onContainerClick = function (e) {
             var target = e.target;
             if (e.target && ["img", "video"].includes(target.tagName.toLowerCase())) {
                 resizeTarge = target;
                 resizePlugin = new ResizePlugin(target, container.parentElement, pluginOptions);
             }
-        });
-        quill.on("text-change", function (_delta, _oldDelta, _source) {
+        };
+        container.addEventListener("click", onContainerClick);
+        var onTextChange = function (_delta, _oldDelta, _source) {
             // Re-scan iframes after each text change to (re)apply resize tracking
             container.querySelectorAll("iframe").forEach(function (item) {
                 normalizeYouTubeIframe(item);
+                trackedIframes.add(item);
                 IframeClick.track(item, function () {
                     resizeTarge = item;
                     resizePlugin = new ResizePlugin(item, container.parentElement, pluginOptions);
                 });
             });
-        });
-        document.addEventListener("mousedown", function (e) {
+        };
+        quill.on("text-change", onTextChange);
+        var onOutsideMouseDown = function (e) {
             var _a, _b, _c;
             var target = e.target;
             if (target !== resizeTarge &&
                 !((_b = (_a = resizePlugin === null || resizePlugin === void 0 ? void 0 : resizePlugin.resizer) === null || _a === void 0 ? void 0 : _a.contains) === null || _b === void 0 ? void 0 : _b.call(_a, target))) {
-                (_c = resizePlugin === null || resizePlugin === void 0 ? void 0 : resizePlugin.destory) === null || _c === void 0 ? void 0 : _c.call(resizePlugin);
+                (_c = resizePlugin === null || resizePlugin === void 0 ? void 0 : resizePlugin.destroy) === null || _c === void 0 ? void 0 : _c.call(resizePlugin);
                 resizePlugin = null;
                 resizeTarge = null;
             }
-        }, { capture: true });
+        };
+        document.addEventListener("mousedown", onOutsideMouseDown, {
+            capture: true,
+        });
+        return {
+            /**
+             * Removes every listener this module registered (container click,
+             * quill text-change, the document-wide outside-click watcher) and
+             * destroys the active resizer overlay, if any. Also stops tracking any
+             * iframes this instance registered with IframeOnClick, so the shared
+             * polling interval it manages can be freed once no editor needs it.
+             */
+            destroy: function () {
+                var _a, _b;
+                container.removeEventListener("click", onContainerClick);
+                (_a = quill.off) === null || _a === void 0 ? void 0 : _a.call(quill, "text-change", onTextChange);
+                document.removeEventListener("mousedown", onOutsideMouseDown, {
+                    capture: true,
+                });
+                (_b = resizePlugin === null || resizePlugin === void 0 ? void 0 : resizePlugin.destroy) === null || _b === void 0 ? void 0 : _b.call(resizePlugin);
+                resizePlugin = null;
+                resizeTarge = null;
+                trackedIframes.forEach(function (iframe) { return IframeClick.untrack(iframe); });
+                trackedIframes.clear();
+            },
+        };
     }
 
     return QuillResizeModule;

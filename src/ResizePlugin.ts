@@ -53,6 +53,8 @@ class ResizePlugin {
   startResizePosition: Position | null = null;
   i18n: I18n;
   options: any;
+  private scrollParent: Element | null = null;
+  private onScroll: () => void;
 
   constructor(
     resizeTarget: ResizeElement,
@@ -78,6 +80,7 @@ class ResizePlugin {
     this.startResize = this.startResize.bind(this);
     this.toolbarClick = this.toolbarClick.bind(this);
     this.toolbarInputChange = this.toolbarInputChange.bind(this);
+    this.onScroll = () => this.positionResizerToTarget(this.resizeTarget);
     this.bindEvents();
   }
 
@@ -157,10 +160,12 @@ class ResizePlugin {
     window.addEventListener("mouseup", this.endResize);
     window.addEventListener("mousemove", this.resizing);
 
-    // Add scroll parent detection for better positioning
-    getScrollParent(this.resizeTarget)?.addEventListener("scroll", () => {
-      this.positionResizerToTarget(this.resizeTarget);
-    });
+    // Add scroll parent detection for better positioning. The listener
+    // reference is kept so destroy() can remove it again; without this the
+    // scroll parent would keep a dangling reference to this instance (and
+    // its DOM nodes) forever once the resizer is torn down.
+    this.scrollParent = getScrollParent(this.resizeTarget);
+    this.scrollParent?.addEventListener("scroll", this.onScroll);
   }
   _setStylesForToolbar(type: string, styles: string | undefined) {
     const storeKey = `_styles_${type}`;
@@ -242,11 +247,22 @@ class ResizePlugin {
     this.positionResizerToTarget(this.resizeTarget);
   }
 
-  destory() {
+  destroy() {
     this.container.removeChild(this.resizer as HTMLElement);
     window.removeEventListener("mouseup", this.endResize);
     window.removeEventListener("mousemove", this.resizing);
+    this.scrollParent?.removeEventListener("scroll", this.onScroll);
+    this.scrollParent = null;
     this.resizer = null;
+  }
+
+  /**
+   * @deprecated Use destroy() instead. Kept as an alias for backward
+   * compatibility with any code calling the previous (misspelled) method
+   * name directly.
+   */
+  destory() {
+    this.destroy();
   }
 }
 

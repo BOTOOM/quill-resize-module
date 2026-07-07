@@ -14,7 +14,7 @@ function createTarget(): HTMLElement {
 }
 
 // ResizePlugin.bindEvents() registers "mouseup"/"mousemove" listeners on
-// `window` for every instance and only removes them via destory(). Track
+// `window` for every instance and only removes them via destroy(). Track
 // every instance created in a test and destroy it afterwards, otherwise
 // listeners (and their closures over `options`) leak into later tests.
 let activePlugins: ResizePlugin[] = [];
@@ -31,7 +31,7 @@ function createPlugin(
 afterEach(() => {
   activePlugins.forEach((plugin) => {
     try {
-      plugin.destory();
+      plugin.destroy();
     } catch {
       // instance already destroyed/detached in the test itself; ignore.
     }
@@ -269,7 +269,19 @@ describe("ResizePlugin", () => {
     expect(plugin.startResizePosition).toBeNull();
   });
 
-  it("removes the overlay from the container on destory()", () => {
+  it("removes the overlay from the container on destroy()", () => {
+    const container = createContainer();
+    const target = createTarget();
+    container.appendChild(target);
+
+    const plugin = createPlugin(target, container);
+    plugin.destroy();
+
+    expect(container.querySelector("#editor-resizer")).toBeNull();
+    expect(plugin.resizer).toBeNull();
+  });
+
+  it("keeps the deprecated destory() alias working for backward compatibility", () => {
     const container = createContainer();
     const target = createTarget();
     container.appendChild(target);
@@ -279,5 +291,21 @@ describe("ResizePlugin", () => {
 
     expect(container.querySelector("#editor-resizer")).toBeNull();
     expect(plugin.resizer).toBeNull();
+  });
+
+  it("removes the scroll-parent listener on destroy() instead of leaking it", () => {
+    const scrollParent = createContainer();
+    scrollParent.style.overflowY = "auto";
+    const container = document.createElement("div");
+    scrollParent.appendChild(container);
+    const target = createTarget();
+    container.appendChild(target);
+
+    const plugin = createPlugin(target, container);
+    const removeSpy = vi.spyOn(scrollParent, "removeEventListener");
+
+    plugin.destroy();
+
+    expect(removeSpy).toHaveBeenCalledWith("scroll", expect.any(Function));
   });
 });

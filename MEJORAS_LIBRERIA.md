@@ -135,6 +135,12 @@ Segun el benchmark de npm, GitHub y librerias cercanas como `quill-resize-module
 
 ### 1. Persistir alineacion y tamano como formato real de Quill
 
+> ✅ Implementado: `src/formats.ts` registra attributors/blots dedicados
+> (`width`, `height`, `resizeAlign`) y expone `registerResizeFormats()` /
+> `syncResizeStateToQuill()`. Ver `test/persistence.test.ts` (9 tests contra
+> el paquete real `quill`, cubriendo `getContents()`/`setContents()`
+> roundtrip para imagenes, `videoFile` e iframes de video).
+
 Objetivo:
 
 - Hacer que `quill.getContents()` y `quill.setContents()` conserven alineacion y resize.
@@ -339,6 +345,16 @@ Propuesta:
 - Documentar claramente limitaciones y compatibilidad.
 
 ### 13. Limpieza interna
+
+> ✅ Implementado parcialmente: no existian archivos `.backup` para remover.
+> Se renombro `destory()` a `destroy()` (con alias `destory()` deprecado por
+> compatibilidad), se agrego un `destroy()` a nivel de modulo (retornado por
+> `QuillResizeModule`, accesible tambien via `quill.getModule("resize")`)
+> que limpia listeners de `container`/`document`/`quill.on("text-change")`
+> y detiene el tracking de iframes, y se corrigio un listener de scroll
+> anonimo que nunca se removia. El naming publico heredado (`alingTools` en
+> README/demo) sigue pendiente como parte del punto 2 (alineacion de
+> README/runtime/tipos).
 
 Propuesta:
 

@@ -85,7 +85,8 @@
     "node": ">=14.0.0"
   },
   "scripts": {
-    "build": "rollup -c",
+    "build": "rollup -c && npm run build:types",
+    "build:types": "tsc -p tsconfig.json",
     "dev": "rollup -c -w",
     "test": "vitest run",
     "test:watch": "vitest",

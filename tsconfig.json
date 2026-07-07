@@ -4,6 +4,7 @@
     "module": "esnext",
     "strict": true,
     "esModuleInterop": true,
+    "skipLibCheck": true,
     "lib": ["ES2015", "ES2016", "ES2017", "ES2021", "DOM"],
     "declaration": true,
     "declarationDir": "./types",

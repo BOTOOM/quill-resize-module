@@ -7,11 +7,25 @@ interface Quill {
   container: HTMLElement;
   root: HTMLElement; // edit area
   on: any;
+  off?: any;
 }
 interface QuillResizeModuleOptions {
   locale?: Locale;
   onChange?: (element: HTMLElement) => void;
   [index: string]: any;
+}
+
+/**
+ * Handle returned by QuillResizeModule (and, when registered the standard
+ * Quill way via `Quill.register("modules/resize", QuillResizeModule)`,
+ * retrievable through `quill.getModule("resize")`). Lets consumers tear
+ * down every listener/timer this module created — important for SPA
+ * frameworks that destroy and recreate Quill instances on route/component
+ * changes, since the container/document/text-change listeners otherwise
+ * live for as long as the page does.
+ */
+interface ResizeModuleHandle {
+  destroy(): void;
 }
 
 function isYouTubeUrl(url: string): boolean {
@@ -59,10 +73,14 @@ function normalizeYouTubeIframe(iframe: HTMLIFrameElement) {
   iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
 }
 
-function QuillResizeModule(quill: Quill, options?: QuillResizeModuleOptions) {
+function QuillResizeModule(
+  quill: Quill,
+  options?: QuillResizeModuleOptions
+): ResizeModuleHandle {
   const container: HTMLElement = quill.root as HTMLElement;
   let resizeTarge: HTMLElement | null;
   let resizePlugin: ResizePlugin | null;
+  const trackedIframes = new Set<HTMLIFrameElement>();
 
   // Enables width/height/align to persist through Quill Delta round trips
   // (getContents()/setContents()) instead of relying solely on inline
@@ -74,7 +92,7 @@ function QuillResizeModule(quill: Quill, options?: QuillResizeModuleOptions) {
     __quillInstance: quill,
   };
 
-  container.addEventListener("click", (e: Event) => {
+  const onContainerClick = (e: Event) => {
     const target: HTMLElement = e.target as HTMLElement;
     if (e.target && ["img", "video"].includes(target.tagName.toLowerCase())) {
       resizeTarge = target;
@@ -84,13 +102,15 @@ function QuillResizeModule(quill: Quill, options?: QuillResizeModuleOptions) {
         pluginOptions
       );
     }
-  });
+  };
+  container.addEventListener("click", onContainerClick);
 
-  quill.on("text-change", (_delta: any, _oldDelta: any, _source: string) => {
+  const onTextChange = (_delta: any, _oldDelta: any, _source: string) => {
     // Re-scan iframes after each text change to (re)apply resize tracking
     container.querySelectorAll("iframe").forEach((item: HTMLIFrameElement) => {
       normalizeYouTubeIframe(item);
 
+      trackedIframes.add(item);
       IframeOnClick.track(item, () => {
         resizeTarge = item;
         resizePlugin = new ResizePlugin(
@@ -100,23 +120,45 @@ function QuillResizeModule(quill: Quill, options?: QuillResizeModuleOptions) {
         );
       });
     });
+  };
+  quill.on("text-change", onTextChange);
+
+  const onOutsideMouseDown = (e: Event) => {
+    const target = e.target as HTMLElement;
+    if (
+      target !== resizeTarge &&
+      !resizePlugin?.resizer?.contains?.(target)
+    ) {
+      resizePlugin?.destroy?.();
+      resizePlugin = null;
+      resizeTarge = null;
+    }
+  };
+  document.addEventListener("mousedown", onOutsideMouseDown, {
+    capture: true,
   });
 
-  document.addEventListener(
-    "mousedown",
-    (e: Event) => {
-      const target = e.target as HTMLElement;
-      if (
-        target !== resizeTarge &&
-        !resizePlugin?.resizer?.contains?.(target)
-      ) {
-        resizePlugin?.destory?.();
-        resizePlugin = null;
-        resizeTarge = null;
-      }
+  return {
+    /**
+     * Removes every listener this module registered (container click,
+     * quill text-change, the document-wide outside-click watcher) and
+     * destroys the active resizer overlay, if any. Also stops tracking any
+     * iframes this instance registered with IframeOnClick, so the shared
+     * polling interval it manages can be freed once no editor needs it.
+     */
+    destroy() {
+      container.removeEventListener("click", onContainerClick);
+      quill.off?.("text-change", onTextChange);
+      document.removeEventListener("mousedown", onOutsideMouseDown, {
+        capture: true,
+      } as EventListenerOptions);
+      resizePlugin?.destroy?.();
+      resizePlugin = null;
+      resizeTarge = null;
+      trackedIframes.forEach((iframe) => IframeOnClick.untrack(iframe));
+      trackedIframes.clear();
     },
-    { capture: true }
-  );
+  };
 }
 
 export default QuillResizeModule;

@@ -15,6 +15,9 @@ function createQuillMock(root: HTMLElement): QuillLike & {
     on(event: string, cb: EventHandler) {
       (handlers[event] ||= []).push(cb);
     },
+    off(event: string, cb: EventHandler) {
+      handlers[event] = (handlers[event] || []).filter((item) => item !== cb);
+    },
     emit(event: string, ...args: unknown[]) {
       (handlers[event] || []).forEach((cb) => cb(...args));
     },
@@ -190,6 +193,75 @@ describe("QuillResizeModule", () => {
         iframes: Array<{ hasTracked: boolean }>;
       };
       expect(state.iframes[0]?.hasTracked).toBe(true);
+    });
+  });
+
+  describe("destroy()", () => {
+    it("stops reacting to clicks on media elements", () => {
+      const { wrapper, root } = createEditor();
+      const img = document.createElement("img");
+      root.appendChild(img);
+      const quill = createQuillMock(root);
+
+      const handle = QuillResizeModule(quill);
+      handle.destroy();
+      img.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(wrapper.querySelector("#editor-resizer")).toBeNull();
+    });
+
+    it("removes the active resizer overlay, if any, when called", () => {
+      const { wrapper, root } = createEditor();
+      const img = document.createElement("img");
+      root.appendChild(img);
+      const quill = createQuillMock(root);
+
+      const handle = QuillResizeModule(quill);
+      img.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      expect(wrapper.querySelector("#editor-resizer")).not.toBeNull();
+
+      handle.destroy();
+
+      expect(wrapper.querySelector("#editor-resizer")).toBeNull();
+    });
+
+    it("stops tracking iframes registered via text-change, freeing the shared polling interval", () => {
+      const { root } = createEditor();
+      const iframe = document.createElement("iframe");
+      iframe.src = "https://example.com/embed";
+      root.appendChild(iframe);
+      const quill = createQuillMock(root);
+
+      const handle = QuillResizeModule(quill);
+      quill.emit("text-change", {}, {}, "api");
+
+      const state = IframeClick as unknown as {
+        iframes: unknown[];
+        interval: ReturnType<typeof setInterval> | null;
+      };
+      expect(state.iframes.length).toBe(1);
+
+      handle.destroy();
+
+      expect(state.iframes.length).toBe(0);
+      expect(state.interval).toBeNull();
+    });
+
+    it("stops reacting to further text-change events after destroy", () => {
+      const { root } = createEditor();
+      const iframe = document.createElement("iframe");
+      iframe.src = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+      root.appendChild(iframe);
+      const quill = createQuillMock(root);
+
+      const handle = QuillResizeModule(quill);
+      handle.destroy();
+      quill.emit("text-change", {}, {}, "api");
+
+      // No normalization should have run since the listener was removed.
+      expect(iframe.src).toBe(
+        "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+      );
     });
   });
 });
