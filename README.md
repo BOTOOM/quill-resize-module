@@ -436,8 +436,9 @@ handle has an enlarged (invisible) hit area for touch screens.
 - ✅ **Build system modernized** with Rollup v3
 
 ### Security Status
-- 🔒 **0 vulnerabilities** (npm audit)
-- 🛡️ **Modern dependencies** (no deprecated packages)
+- 🔒 **0 vulnerabilities** in production dependencies (`npm audit --omit=dev --audit-level=high`)
+- 🛡️ **Modern dependencies** — dev tooling vulnerabilities are tracked and remediated conservatively (see [`MEJORAS_LIBRERIA.md`](./MEJORAS_LIBRERIA.md#auditoria-y-remediacion-de-dependencias))
+- ⚠️ One known **low-severity** issue in `quill` itself (an XSS in its HTML export feature, [GHSA-v3m3-f69x-jf25](https://github.com/advisories/GHSA-v3m3-f69x-jf25)), affecting the latest published `quill` release with no fix available yet — tracked upstream, not introduced by this module
 - ✅ **CI/CD security** with Node.js 20.x
 
 ## 📱 Browser Support

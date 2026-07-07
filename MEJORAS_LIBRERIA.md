@@ -584,6 +584,69 @@ Propuesta:
 - Corregir naming publico heredado.
 - Agregar API de `destroy()` para limpiar listeners e intervalos.
 
+## Auditoria y remediacion de dependencias
+
+> ✅ Implementado (estrategia conservadora, confirmada con el usuario):
+> se partio de `npm audit` reportando 23 vulnerabilidades (1 baja, 8
+> moderadas, 13 altas, 1 critica), todas en `devDependencies` (el paquete
+> publicado no declara `dependencies` en runtime, solo `peerDependencies`
+> para `quill`; `npm audit --omit=dev --audit-level=high` ya reportaba 0
+> vulnerabilidades desde el inicio del proyecto). Acciones tomadas:
+>
+> 1. `npm audit fix` (no-breaking) resolvio 19 de las 23 automaticamente
+>    — actualizaciones transitivas de `@sigstore/*`, `ajv`,
+>    `brace-expansion`, `fast-uri`, `flatted`, `handlebars`, `ip-address`,
+>    `js-yaml`, `lodash`/`lodash-es`, `minimatch`, `npm` (dependencia de
+>    `@semantic-release/npm`), `picomatch`, `rollup`, `sigstore`, `svgo`,
+>    `tar`, `undici` — todas dependencias del toolchain de
+>    `semantic-release`/CI, nunca empaquetadas para consumidores.
+> 2. `yaml@1.10.2` (moderado, *Stack Overflow via deeply nested YAML
+>    collections*, rango afectado `>=1.0.0 <1.10.3`) quedaba en un estado
+>    "invalid" por un conflicto de resolucion entre `rollup-plugin-postcss`
+>    (via `cssnano`/`postcss-load-config`, que requieren `yaml@^1.10.2`) y
+>    `vite` (que requiere `yaml@^2.4.2`). Se agrego un override quirurgico
+>    en `package.json`: `"overrides": { "yaml@1.10.2": "1.10.3" }`, que
+>    fuerza solo las ramas que resolvian a `1.10.2` a la ultima version
+>    parche de la serie 1.x (`1.10.3`, dentro del rango que sus
+>    `peerDependencies`/`dependencies` ya aceptaban), sin tocar la
+>    resolucion de `vite`. Verificado con `npm ls yaml --all` (sin
+>    entradas "invalid" y ambas rutas en `1.10.3 overridden`).
+> 3. `@rollup/plugin-terser` se actualizo de `^0.4.4` a `^1.0.0`
+>    (bump mayor de semver, pero solo usado en build-time para minificar
+>    nuestro propio bundle — nunca se distribuye a consumidores) para
+>    resolver una vulnerabilidad alta en `serialize-javascript`
+>    (RCE via `RegExp.flags`/`toISOString`, y DoS por agotamiento de CPU).
+>    `@rollup/plugin-terser@1.0.0` declara soporte para
+>    `rollup ^2.0.0 || ^3.0.0 || ^4.0.0` (compatible con nuestro
+>    `rollup@^3.29.0`, sin necesidad de subir de major alli) y requiere
+>    Node `>=20`, ya satisfecho por los workflows de CI (`node-version:
+>    '20.x'`/`'22.x'`) y por el entorno de desarrollo local. Verificado
+>    reconstruyendo (`npm run build`), confirmando que el bundle
+>    minificado sigue minificandose correctamente y el tamano se mantiene
+>    igual (`npm run size`: 7.96 kB brotli, limite 15 kB).
+> 4. `quill@2.0.3` (baja, *XSS via HTML export feature*,
+>    [GHSA-v3m3-f69x-jf25](https://github.com/advisories/GHSA-v3m3-f69x-jf25))
+>    queda **sin corregir intencionalmente**: es la ultima version
+>    publicada de `quill` (no existe un release mas nuevo que la
+>    solucione todavia) y el "fix" que ofrece `npm audit fix --force`
+>    consiste en *bajar* a `quill@2.0.2` — lo cual no soluciona la causa
+>    raiz (el advisory no confirma que `2.0.2` este libre del problema,
+>    solo que esta fuera del rango afectado declarado) y podria perder
+>    otras correcciones/funcionalidad de `2.0.3`. Ademas, `quill` es una
+>    `peerDependency` (el consumidor final elige su propia version) y un
+>    `devDependency` usado solo para ejecutar los tests de persistencia
+>    contra el paquete real — nuestra libreria no invoca la funcion de
+>    exportacion a HTML de Quill internamente. Se documenta como hallazgo
+>    conocido, sin accion adicional hasta que exista un parche oficial
+>    corriente arriba.
+>
+> Resultado final: `npm audit` paso de 23 a 1 vulnerabilidad (baja, sin
+> fix disponible, documentada arriba); `npm audit --omit=dev
+> --audit-level=high` se mantiene en 0. Validado con 107/107 tests (2
+> corridas adicionales con `--sequence.shuffle` sin flake), lint (0
+> errores), `npx tsc --noEmit` limpio, y `npm run build`/`npm run size`
+> sin cambios de comportamiento.
+
 ## Roadmap sugerido
 
 ### Fase 1 - Confiabilidad
