@@ -483,6 +483,30 @@ Propuesta:
 - Declarar `peerDependencies` para `quill`.
 - Revisar `exports` para importacion limpia en Node y bundlers modernos.
 
+**✅ Implementado**: se detecto que `dist/quill-resize-module.js` (apuntado
+por `exports["."].import` y por el campo `module`) en realidad se
+compilaba en formato UMD (`(function (global, factory) {...})`), no ESM
+real — un problema real para bundlers/Node al resolver la condicion
+`import`. Se agrega un tercer target en `rollup.config.js`
+(`format: "es"`, salida `dist/quill-resize-module.esm.mjs`) que genera
+`export`/`import` nativos; la extension `.mjs` hace que Node trate el
+archivo como ESM sin depender del campo `type` del paquete (que sigue
+siendo CommonJS por defecto, preservando compatibilidad). `package.json`
+ahora tiene: `"module"` apuntando al nuevo build ESM real, y
+`exports["."]` con `types` primero (orden requerido por la resolucion de
+tipos de TypeScript), `import` -> el `.mjs`, y `require`/`default` -> el
+UMD minificado existente (sin cambios para consumidores `require()`
+actuales). Se agrega `dist/*.mjs` y `dist/*.map` a `files` para que
+`npm pack` incluya el nuevo build y sus sourcemaps. `peerDependencies`
+para `quill` ya existia previamente. Verificado con: `npm run build`,
+`npm pack --dry-run` (confirma que el `.mjs` se incluye en el tarball),
+y pruebas manuales de resolucion de paquete en un directorio temporal
+con symlink (`require()` resuelve al UMD minificado, `import` nativo de
+Node resuelve al `.mjs` real — ambos alcanzan el codigo del modulo,
+fallando solo con el `ReferenceError: HTMLElement is not defined`
+esperado y preexistente al ejecutarse fuera de un DOM real, igual que
+con el build anterior). 107/107 tests, lint y audit sin cambios.
+
 ### 12. Demo y documentacion por framework
 
 Propuesta:

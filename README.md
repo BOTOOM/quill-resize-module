@@ -37,6 +37,18 @@ A modern, secure module for the Quill rich text editor that allows you to resize
 npm install @botom/quill-resize-module
 ```
 
+This package ships three builds so both Node/bundler resolution and
+plain `<script>` usage work correctly:
+
+| Consumer | File | Format |
+|----------|------|--------|
+| Bundlers/Node (`import`) | `dist/quill-resize-module.esm.mjs` | Real ES module (`export`/`import`) |
+| Bundlers/Node (`require`), CDN `<script>` | `dist/quill-resize-module.min.js` | UMD, minified |
+| Legacy `<script>` (unminified/debug) | `dist/quill-resize-module.js` | UMD |
+
+The package's `exports` map resolves `import`/`require` automatically —
+you normally don't need to reference these paths directly.
+
 ## 🛠️ Usage
 
 ### ES6/TypeScript

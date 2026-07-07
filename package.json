@@ -3,13 +3,14 @@
   "version": "2.1.0",
   "description": "🔒 Secure & modern Quill.js module for resizing images, videos, and iframes with zero vulnerabilities and automatic releases",
   "main": "./dist/quill-resize-module.min.js",
-  "module": "./dist/quill-resize-module.js",
+  "module": "./dist/quill-resize-module.esm.mjs",
   "types": "./types/main.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/quill-resize-module.js",
+      "types": "./types/main.d.ts",
+      "import": "./dist/quill-resize-module.esm.mjs",
       "require": "./dist/quill-resize-module.min.js",
-      "types": "./types/main.d.ts"
+      "default": "./dist/quill-resize-module.min.js"
     },
     "./package.json": "./package.json"
   },
@@ -101,6 +102,8 @@
   },
   "files": [
     "dist/*.js",
+    "dist/*.mjs",
+    "dist/*.map",
     "types/*.d.ts",
     "README.md",
     "CHANGELOG.md",
