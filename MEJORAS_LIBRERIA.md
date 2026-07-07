@@ -318,10 +318,9 @@ aditivos junto al `onChange` existente (que sigue disparandose en todos
 sus puntos de invocacion previos para mantener compatibilidad). `onResize`
 recibe un `ResizeChangeEvent` tipado (`{ target, width, height, align }`)
 en vez de obligar a leer `element.style` manualmente. `ResizeConstraints`
-se difiere deliberadamente al punto 8 (limites y modos de resize), donde
-se implementara junto con el comportamiento real de min/max/lock — para
-no repetir el problema de "API documentada pero no implementada" que
-motivo el punto 2. Cubierto con tests en
+se implemento en el punto 8 (limites y modos de resize), junto con el
+comportamiento real de min/max/lock, y tambien se exporta como tipo
+nombrado. Cubierto con tests en
 `describe("public callbacks")` (`test/ResizePlugin.test.ts`) y en
 `test/main.test.ts`. Documentado en la nueva seccion "Callbacks" del
 README.
@@ -362,6 +361,22 @@ Propuesta:
 Impacto:
 
 - Hace la libreria util en productos reales con layouts responsivos.
+
+**✅ Implementado**: se agrego la opcion `constraints` (`minWidth`,
+`maxWidth`, `minHeight`, `maxHeight`, `lockAspectRatio`) exportada como el
+tipo `ResizeConstraints`, aplicada en drag por puntero, atajos de teclado
+y (para `maxWidth`/`minWidth`) en las acciones de la toolbar en modo
+`px`. Un piso absoluto de 30px se mantiene como red de seguridad aunque
+se configure un `minWidth`/`minHeight` menor. `constraintsByTag` permite
+sobreescribir `constraints` por tag (`img`/`video`/`iframe`) — por
+ejemplo, forzar `lockAspectRatio` solo en videos/iframes. Se agrego
+`toolbar.sizeUnit` (`"%"` por defecto o `"px"`) y `toolbar.sizePresets`
+(por defecto `[100, 50]`, igual que el comportamiento previo) para
+elegir el modo de tamano y las presets del toolbar. Cubierto por 9 tests
+nuevos en `describe("resize constraints and modes")`
+(`test/ResizePlugin.test.ts`) y un test de `constraintsByTag` en
+`test/main.test.ts`. Documentado en la nueva seccion "Resize Constraints
+& Modes" del README.
 
 ### 9. Custom embeds
 

@@ -118,7 +118,7 @@ describe("ResizePlugin", () => {
 
     const plugin = createPlugin(target, container, { onChange });
     const button = plugin.resizer?.querySelector(
-      '.btn[data-styles="width:50%"]'
+      '.btn[data-percent="50"]'
     ) as HTMLElement;
     button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
@@ -791,7 +791,7 @@ describe("ResizePlugin", () => {
         onResizeEnd,
       });
       const button = plugin.resizer?.querySelector(
-        '.btn[data-styles="width:50%"]'
+        '.btn[data-percent="50"]'
       ) as HTMLElement;
       button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
@@ -824,6 +824,191 @@ describe("ResizePlugin", () => {
       expect(onResizeStart).toHaveBeenCalledTimes(1);
       expect(onResize).toHaveBeenCalledTimes(1);
       expect(onResizeEnd).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("resize constraints and modes", () => {
+    it("clamps a pointer drag to maxWidth/maxHeight", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      stubGeometry(target, { width: 100, height: 80 });
+
+      const plugin = createPlugin(target, container, {
+        constraints: { maxWidth: 120, maxHeight: 90 },
+      });
+      const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
+
+      handler.dispatchEvent(leftButtonPointerDown({ clientX: 0, clientY: 0 }));
+      window.dispatchEvent(
+        new PointerEvent("pointermove", { clientX: 200, clientY: 200 })
+      );
+
+      expect(target.style.width).toBe("120px");
+      expect(target.style.height).toBe("90px");
+    });
+
+    it("clamps a pointer drag to a minWidth/minHeight above the built-in 30px floor", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      stubGeometry(target, { width: 100, height: 80 });
+
+      const plugin = createPlugin(target, container, {
+        constraints: { minWidth: 60, minHeight: 60 },
+      });
+      const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
+
+      handler.dispatchEvent(leftButtonPointerDown({ clientX: 0, clientY: 0 }));
+      window.dispatchEvent(
+        new PointerEvent("pointermove", { clientX: -100, clientY: -100 })
+      );
+
+      expect(target.style.width).toBe("60px");
+      expect(target.style.height).toBe("60px");
+    });
+
+    it("still enforces the 30px safety floor even if minWidth is set lower", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      stubGeometry(target, { width: 40, height: 40 });
+
+      const plugin = createPlugin(target, container, {
+        constraints: { minWidth: 5, minHeight: 5 },
+      });
+      const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
+
+      handler.dispatchEvent(leftButtonPointerDown({ clientX: 0, clientY: 0 }));
+      window.dispatchEvent(
+        new PointerEvent("pointermove", { clientX: -100, clientY: -100 })
+      );
+
+      expect(target.style.width).toBe("30px");
+      expect(target.style.height).toBe("30px");
+    });
+
+    it("clamps a keyboard arrow-key resize to maxWidth", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      stubGeometry(target, { width: 118, height: 80 });
+
+      const plugin = createPlugin(target, container, {
+        constraints: { maxWidth: 120 },
+      });
+      const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
+
+      handler.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "ArrowRight",
+          shiftKey: true,
+          bubbles: true,
+        })
+      );
+
+      expect(target.style.width).toBe("120px");
+    });
+
+    it("locks the aspect ratio on every drag when constraints.lockAspectRatio is set (without needing Alt)", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      stubGeometry(target, { width: 100, height: 50 });
+
+      const plugin = createPlugin(target, container, {
+        constraints: { lockAspectRatio: true },
+      });
+      const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
+
+      handler.dispatchEvent(leftButtonPointerDown({ clientX: 0, clientY: 0 }));
+      window.dispatchEvent(
+        new PointerEvent("pointermove", { clientX: 100, clientY: 0 })
+      );
+
+      // originSize ratio is height/width = 50/100 = 0.5, new width = 200
+      expect(target.style.width).toBe("200px");
+      expect(target.style.height).toBe("100px");
+    });
+
+    it("renders configurable toolbar.sizePresets instead of the default 100%/50%", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container, {
+        toolbar: { sizePresets: [75, 25] },
+      });
+      const sizeGroup = plugin.resizer?.querySelector(
+        '[data-group="size"]'
+      ) as HTMLElement;
+
+      expect(sizeGroup.querySelector('.btn[data-percent="75"]')).not.toBeNull();
+      expect(sizeGroup.querySelector('.btn[data-percent="25"]')).not.toBeNull();
+      expect(sizeGroup.querySelector('.btn[data-percent="100"]')).toBeNull();
+      expect(sizeGroup.querySelector('.btn[data-percent="50"]')).toBeNull();
+    });
+
+    it("applies an absolute px width (computed from the original size) when toolbar.sizeUnit is 'px'", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      stubGeometry(target, { width: 200, height: 100 });
+
+      const plugin = createPlugin(target, container, {
+        toolbar: { sizeUnit: "px" },
+      });
+      const button = plugin.resizer?.querySelector(
+        '.btn[data-percent="50"]'
+      ) as HTMLElement;
+      button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(target.style.cssText.replace(/\s/g, "")).toContain("width:100px");
+      expect(target.style.cssText.replace(/\s/g, "")).toContain(
+        "height:auto"
+      );
+    });
+
+    it("clamps a px-unit toolbar preset to maxWidth", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      stubGeometry(target, { width: 200, height: 100 });
+
+      const plugin = createPlugin(target, container, {
+        toolbar: { sizeUnit: "px" },
+        constraints: { maxWidth: 80 },
+      });
+      const button = plugin.resizer?.querySelector(
+        '.btn[data-percent="100"]'
+      ) as HTMLElement;
+      button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(target.style.cssText.replace(/\s/g, "")).toContain("width:80px");
+    });
+
+    it("updates the toolbar input suffix/label unit to 'px' and applies px directly from the value", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container, {
+        toolbar: { sizeUnit: "px" },
+      });
+      const suffix = plugin.resizer?.querySelector(
+        ".input-wrapper .suffix"
+      ) as HTMLElement;
+      expect(suffix.textContent).toBe("px");
+
+      const input = plugin.resizer?.querySelector(
+        'input[data-type="width"]'
+      ) as HTMLInputElement;
+      input.value = "321";
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+
+      expect(target.style.cssText.replace(/\s/g, "")).toContain(
+        "width:321px"
+      );
     });
   });
 });

@@ -67,7 +67,7 @@ describe("Quill-native persistence", () => {
       "#editor-resizer"
     ) as HTMLElement;
     const widthBtn = resizer.querySelector(
-      '.btn[data-styles="width:50%"]'
+      '.btn[data-percent="50"]'
     ) as HTMLElement;
     widthBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
@@ -163,7 +163,7 @@ describe("Quill-native persistence", () => {
       "#editor-resizer"
     ) as HTMLElement;
     resizer
-      .querySelector('.btn[data-styles="width:50%"]')
+      .querySelector('.btn[data-percent="50"]')
       ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     resizer
       .querySelector('.btn[data-type="align"][data-styles="float:left"]')
@@ -209,7 +209,7 @@ describe("Quill-native persistence", () => {
       "#editor-resizer"
     ) as HTMLElement;
     resizer
-      .querySelector('.btn[data-styles="width:50%"]')
+      .querySelector('.btn[data-percent="50"]')
       ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
     const op = quill.getContents().ops.find(
@@ -238,7 +238,7 @@ describe("Quill-native persistence", () => {
     ) as HTMLElement;
     expect(resizer).not.toBeNull();
     resizer
-      .querySelector('.btn[data-styles="width:50%"]')
+      .querySelector('.btn[data-percent="50"]')
       ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
     const op = quill.getContents().ops.find(
@@ -262,7 +262,7 @@ describe("Quill-native persistence", () => {
         "#editor-resizer"
       ) as HTMLElement;
       resizer
-        .querySelector('.btn[data-styles="width:50%"]')
+        .querySelector('.btn[data-percent="50"]')
         ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     }).not.toThrow();
 

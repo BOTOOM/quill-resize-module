@@ -17,6 +17,39 @@ interface ToolbarOptions {
      * with the previous (misspelled) option name.
      */
     alingTools?: boolean;
+    /**
+     * Percentages rendered as quick-size preset buttons. Default: `[100, 50]`
+     * (matching the library's previous hardcoded 100%/50% buttons).
+     */
+    sizePresets?: number[];
+    /**
+     * Unit applied by the preset buttons and the width input.
+     * - `"%"` (default): sets a relative `width: N%;`, so the embed keeps
+     *   resizing with its container (e.g. on a responsive layout).
+     * - `"px"`: sets an absolute `width: Npx; height: auto;`, computed as a
+     *   percentage of the embed's original (as-inserted) size, so the embed
+     *   keeps a fixed size regardless of container width.
+     */
+    sizeUnit?: "%" | "px";
+}
+/**
+ * Bounds and behavior applied to every resize gesture (pointer drag,
+ * keyboard arrow steps, and — where the resulting unit is `px` — toolbar
+ * preset/input changes). All fields are optional; omitting a bound leaves
+ * that dimension unconstrained (aside from the library's built-in 30px
+ * minimum, which always applies as a safety floor).
+ */
+interface ResizeConstraints {
+    minWidth?: number;
+    maxWidth?: number;
+    minHeight?: number;
+    maxHeight?: number;
+    /**
+     * When true, every resize gesture preserves the original aspect ratio
+     * (as if Alt were held for the whole gesture), instead of only doing so
+     * while the user holds Alt.
+     */
+    lockAspectRatio?: boolean;
 }
 interface QuillResizeModuleOptions {
     locale?: Locale;
@@ -46,6 +79,15 @@ interface QuillResizeModuleOptions {
     /** Display the current width/height as a small label. Default: false. */
     showSize?: boolean;
     toolbar?: ToolbarOptions;
+    /** Min/max width & height bounds and aspect-ratio locking, applied to every target. */
+    constraints?: ResizeConstraints;
+    /**
+     * Per-tag override of `constraints` (e.g. force a locked aspect ratio
+     * only for `video`/`iframe` embeds). Fields specified here take
+     * precedence over the matching field in the global `constraints` for
+     * that tag.
+     */
+    constraintsByTag?: Partial<Record<"img" | "video" | "iframe", ResizeConstraints>>;
     [index: string]: any;
 }
 /**
@@ -62,4 +104,4 @@ interface ResizeModuleHandle {
 }
 declare function QuillResizeModule(quill: Quill, options?: QuillResizeModuleOptions): ResizeModuleHandle;
 export default QuillResizeModule;
-export type { QuillResizeModuleOptions, ToolbarOptions, ResizeModuleHandle, ResizeChangeEvent, };
+export type { QuillResizeModuleOptions, ToolbarOptions, ResizeModuleHandle, ResizeChangeEvent, ResizeConstraints, };

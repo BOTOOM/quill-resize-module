@@ -40,6 +40,40 @@ interface ToolbarOptions {
    * with the previous (misspelled) option name.
    */
   alingTools?: boolean;
+  /**
+   * Percentages rendered as quick-size preset buttons. Default: `[100, 50]`
+   * (matching the library's previous hardcoded 100%/50% buttons).
+   */
+  sizePresets?: number[];
+  /**
+   * Unit applied by the preset buttons and the width input.
+   * - `"%"` (default): sets a relative `width: N%;`, so the embed keeps
+   *   resizing with its container (e.g. on a responsive layout).
+   * - `"px"`: sets an absolute `width: Npx; height: auto;`, computed as a
+   *   percentage of the embed's original (as-inserted) size, so the embed
+   *   keeps a fixed size regardless of container width.
+   */
+  sizeUnit?: "%" | "px";
+}
+
+/**
+ * Bounds and behavior applied to every resize gesture (pointer drag,
+ * keyboard arrow steps, and — where the resulting unit is `px` — toolbar
+ * preset/input changes). All fields are optional; omitting a bound leaves
+ * that dimension unconstrained (aside from the library's built-in 30px
+ * minimum, which always applies as a safety floor).
+ */
+interface ResizeConstraints {
+  minWidth?: number;
+  maxWidth?: number;
+  minHeight?: number;
+  maxHeight?: number;
+  /**
+   * When true, every resize gesture preserves the original aspect ratio
+   * (as if Alt were held for the whole gesture), instead of only doing so
+   * while the user holds Alt.
+   */
+  lockAspectRatio?: boolean;
 }
 
 interface ResizePluginOption {
@@ -70,6 +104,8 @@ interface ResizePluginOption {
   /** Display the current width/height as a small label. Default: false. */
   showSize?: boolean;
   toolbar?: ToolbarOptions;
+  /** Min/max width & height bounds and aspect-ratio locking. */
+  constraints?: ResizeConstraints;
   /**
    * Live Quill instance, used internally to persist width/height/align
    * through the Delta model. Set automatically by QuillResizeModule; not
@@ -92,8 +128,6 @@ const template = `
 <span class="size-label" aria-hidden="true"></span>
 <div class="toolbar" role="toolbar" aria-label="{7}">
   <div class="group" data-group="size">
-    <button type="button" class="btn" data-type="width" data-styles="width:100%">100%</button>
-    <button type="button" class="btn" data-type="width" data-styles="width:50%">50%</button>
     <span class="input-wrapper"><input type="text" data-type="width" maxlength="3" aria-label="{5}" /><span class="suffix">%</span><span class="tooltip">{5}</span></span>
     <button type="button" class="btn" data-type="width" data-styles="width:auto; height:auto;">{4}</button>
   </div>
@@ -171,6 +205,42 @@ class ResizePlugin {
     };
   }
 
+  /**
+   * Clamps a single dimension to the configured min/max (via
+   * `options.constraints`), always enforcing an absolute 30px floor as a
+   * safety net (matching the library's previous unconfigurable minimum)
+   * even if a smaller `minWidth`/`minHeight` is provided.
+   */
+  _clampDimension(
+    value: number,
+    min: number | undefined,
+    max: number | undefined
+  ): number {
+    const FLOOR = 30;
+    let result = Math.max(value, Math.max(FLOOR, min ?? 0));
+    if (typeof max === "number") {
+      result = Math.min(result, max);
+    }
+    return result;
+  }
+
+  /** Clamps a width/height pair using `options.constraints`. */
+  _clampSize(width: number, height: number): Size {
+    const constraints: ResizeConstraints = this.options?.constraints || {};
+    return {
+      width: this._clampDimension(
+        width,
+        constraints.minWidth,
+        constraints.maxWidth
+      ),
+      height: this._clampDimension(
+        height,
+        constraints.minHeight,
+        constraints.maxHeight
+      ),
+    };
+  }
+
   initResizer() {
     let resizer: HTMLElement | null =
       this.container.querySelector("#editor-resizer");
@@ -192,6 +262,7 @@ class ResizePlugin {
     }
     this.resizer = resizer;
     this.applyToolbarVisibility();
+    this._configureSizeToolbar();
   }
   /**
    * Applies the showToolbar/toolbar.sizeTools/toolbar.alignTools options
@@ -233,6 +304,56 @@ class ResizePlugin {
     ) as HTMLElement;
     if (sizeLabel) {
       sizeLabel.style.display = this.options?.showSize ? "" : "none";
+    }
+  }
+  /**
+   * Renders `toolbar.sizePresets` as quick-size buttons and applies
+   * `toolbar.sizeUnit` to the width input's suffix/max length. Re-run on
+   * every initResizer() call (like applyToolbarVisibility()) since the
+   * overlay element is reused across activations, which may carry
+   * different options than whichever activation first created it.
+   */
+  _configureSizeToolbar() {
+    if (!this.resizer) {
+      return;
+    }
+    const toolbarOptions: ToolbarOptions = this.options?.toolbar || {};
+    const unit = toolbarOptions.sizeUnit ?? "%";
+    const presets = toolbarOptions.sizePresets ?? [100, 50];
+
+    const sizeGroup = this.resizer.querySelector(
+      '[data-group="size"]'
+    ) as HTMLElement;
+    if (sizeGroup) {
+      // Remove preset buttons rendered by a previous activation before
+      // re-rendering, since the overlay element is reused.
+      sizeGroup
+        .querySelectorAll(".btn[data-percent]")
+        .forEach((btn) => btn.remove());
+
+      const inputWrapper = sizeGroup.querySelector(".input-wrapper");
+      presets.forEach((percent) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "btn";
+        btn.dataset.type = "width";
+        btn.dataset.percent = String(percent);
+        btn.textContent = `${percent}%`;
+        sizeGroup.insertBefore(btn, inputWrapper);
+      });
+    }
+
+    const suffix = this.resizer.querySelector(
+      ".input-wrapper .suffix"
+    ) as HTMLElement;
+    if (suffix) {
+      suffix.textContent = unit;
+    }
+    const input = this.resizer.querySelector(
+      'input[data-type="width"]'
+    ) as HTMLInputElement;
+    if (input) {
+      input.setAttribute("maxlength", unit === "px" ? "5" : "3");
     }
   }
   positionResizerToTarget(el: HTMLElement) {
@@ -363,17 +484,15 @@ class ResizePlugin {
     const width = this.resizeTarget.clientWidth + delta[0] * step;
     let height = this.resizeTarget.clientHeight + delta[1] * step;
 
-    if (e.altKey) {
+    if (e.altKey || this.options?.constraints?.lockAspectRatio) {
       const originSize = this.resizeTarget.originSize as Size;
       const rate: number = originSize.height / originSize.width;
       height = rate * width;
     }
 
-    this.resizeTarget.style.setProperty("width", Math.max(width, 30) + "px");
-    this.resizeTarget.style.setProperty(
-      "height",
-      Math.max(height, 30) + "px"
-    );
+    const clamped = this._clampSize(width, height);
+    this.resizeTarget.style.setProperty("width", clamped.width + "px");
+    this.resizeTarget.style.setProperty("height", clamped.height + "px");
     this.positionResizerToTarget(this.resizeTarget);
     this._syncPersistence();
     // Each keystroke is a complete, atomic resize gesture (there's no
@@ -423,12 +542,47 @@ class ResizePlugin {
       syncResizeStateToQuill(quill, this.resizeTarget);
     }
   }
+  /**
+   * Computes the CSS to apply for a given width preset percentage,
+   * honoring `toolbar.sizeUnit`:
+   * - `"%"` (default): a relative `width: N%;`.
+   * - `"px"`: an absolute width computed from the target's original size,
+   *   clamped to `options.constraints`, with `height: auto;` so images and
+   *   videos keep their intrinsic aspect ratio.
+   */
+  _computeWidthStyles(percent: number): string {
+    const unit = this.options?.toolbar?.sizeUnit ?? "%";
+    if (unit === "px") {
+      const originSize = this.resizeTarget.originSize as Size | undefined;
+      const baseWidth = originSize?.width || this.resizeTarget.clientWidth || 0;
+      const rawWidth = Math.round((baseWidth * percent) / 100);
+      const constraints: ResizeConstraints = this.options?.constraints || {};
+      const width = this._clampDimension(
+        rawWidth,
+        constraints.minWidth,
+        constraints.maxWidth
+      );
+      return `width:${width}px; height:auto;`;
+    }
+    return `width:${percent}%;`;
+  }
   toolbarInputChange(e: Event) {
     const target: HTMLInputElement = e.target as HTMLInputElement;
     const type = target?.dataset?.type;
-    const value = target.value;
-    if (type && Number(value)) {
-      this._setStylesForToolbar(type, `width: ${Number(value)}%;`);
+    const value = Number(target.value);
+    if (type && value) {
+      const unit = this.options?.toolbar?.sizeUnit ?? "%";
+      if (unit === "px") {
+        const constraints: ResizeConstraints = this.options?.constraints || {};
+        const width = this._clampDimension(
+          value,
+          constraints.minWidth,
+          constraints.maxWidth
+        );
+        this._setStylesForToolbar(type, `width:${width}px; height:auto;`);
+      } else {
+        this._setStylesForToolbar(type, `width: ${value}%;`);
+      }
     }
   }
   toolbarClick(e: MouseEvent) {
@@ -436,7 +590,15 @@ class ResizePlugin {
     const type = target?.dataset?.type;
 
     if (type && target.classList.contains("btn")) {
-      this._setStylesForToolbar(type, target?.dataset?.styles);
+      const percentAttr = target.dataset?.percent;
+      if (type === "width" && percentAttr) {
+        this._setStylesForToolbar(
+          type,
+          this._computeWidthStyles(Number(percentAttr))
+        );
+      } else {
+        this._setStylesForToolbar(type, target?.dataset?.styles);
+      }
     }
   }
   startResize(e: PointerEvent) {
@@ -496,14 +658,15 @@ class ResizePlugin {
     width += deltaX;
     height += deltaY;
 
-    if (e.altKey) {
+    if (e.altKey || this.options?.constraints?.lockAspectRatio) {
       const originSize = this.resizeTarget.originSize as Size;
       const rate: number = originSize.height / originSize.width;
       height = rate * width;
     }
 
-    this.resizeTarget.style.setProperty("width", Math.max(width, 30) + "px");
-    this.resizeTarget.style.setProperty("height", Math.max(height, 30) + "px");
+    const clamped = this._clampSize(width, height);
+    this.resizeTarget.style.setProperty("width", clamped.width + "px");
+    this.resizeTarget.style.setProperty("height", clamped.height + "px");
     this.positionResizerToTarget(this.resizeTarget);
     this.options?.onResize?.(this.resizeTarget, this._buildChangeEvent());
   }
@@ -529,4 +692,4 @@ class ResizePlugin {
 }
 
 export default ResizePlugin;
-export type { ResizeChangeEvent };
+export type { ResizeChangeEvent, ResizeConstraints };

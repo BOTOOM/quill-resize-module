@@ -358,7 +358,7 @@
         }
         return ResizeElement;
     })(HTMLElement));
-    var template = "\n<button type=\"button\" class=\"handler\" title=\"{0}\" aria-label=\"{6}\"></button>\n<span class=\"size-label\" aria-hidden=\"true\"></span>\n<div class=\"toolbar\" role=\"toolbar\" aria-label=\"{7}\">\n  <div class=\"group\" data-group=\"size\">\n    <button type=\"button\" class=\"btn\" data-type=\"width\" data-styles=\"width:100%\">100%</button>\n    <button type=\"button\" class=\"btn\" data-type=\"width\" data-styles=\"width:50%\">50%</button>\n    <span class=\"input-wrapper\"><input type=\"text\" data-type=\"width\" maxlength=\"3\" aria-label=\"{5}\" /><span class=\"suffix\">%</span><span class=\"tooltip\">{5}</span></span>\n    <button type=\"button\" class=\"btn\" data-type=\"width\" data-styles=\"width:auto; height:auto;\">{4}</button>\n  </div>\n  <div class=\"group\" data-group=\"align\">\n    <button type=\"button\" class=\"btn\" data-type=\"align\" data-styles=\"float:left\">{1}</button>\n    <button type=\"button\" class=\"btn\" data-type=\"align\" data-styles=\"display:block;margin:auto;\">{2}</button>\n    <button type=\"button\" class=\"btn\" data-type=\"align\" data-styles=\"float:right;\">{3}</button>\n    <button type=\"button\" class=\"btn\" data-type=\"align\" data-styles=\"\">{4}</button>\n  </div>\n</div>\n";
+    var template = "\n<button type=\"button\" class=\"handler\" title=\"{0}\" aria-label=\"{6}\"></button>\n<span class=\"size-label\" aria-hidden=\"true\"></span>\n<div class=\"toolbar\" role=\"toolbar\" aria-label=\"{7}\">\n  <div class=\"group\" data-group=\"size\">\n    <span class=\"input-wrapper\"><input type=\"text\" data-type=\"width\" maxlength=\"3\" aria-label=\"{5}\" /><span class=\"suffix\">%</span><span class=\"tooltip\">{5}</span></span>\n    <button type=\"button\" class=\"btn\" data-type=\"width\" data-styles=\"width:auto; height:auto;\">{4}</button>\n  </div>\n  <div class=\"group\" data-group=\"align\">\n    <button type=\"button\" class=\"btn\" data-type=\"align\" data-styles=\"float:left\">{1}</button>\n    <button type=\"button\" class=\"btn\" data-type=\"align\" data-styles=\"display:block;margin:auto;\">{2}</button>\n    <button type=\"button\" class=\"btn\" data-type=\"align\" data-styles=\"float:right;\">{3}</button>\n    <button type=\"button\" class=\"btn\" data-type=\"align\" data-styles=\"\">{4}</button>\n  </div>\n</div>\n";
     var ResizePlugin = /** @class */ (function () {
         function ResizePlugin(resizeTarget, container, options) {
             var _this = this;
@@ -410,6 +410,29 @@
                 align: (_a = readAlignValue(this.resizeTarget)) !== null && _a !== void 0 ? _a : null,
             };
         };
+        /**
+         * Clamps a single dimension to the configured min/max (via
+         * `options.constraints`), always enforcing an absolute 30px floor as a
+         * safety net (matching the library's previous unconfigurable minimum)
+         * even if a smaller `minWidth`/`minHeight` is provided.
+         */
+        ResizePlugin.prototype._clampDimension = function (value, min, max) {
+            var FLOOR = 30;
+            var result = Math.max(value, Math.max(FLOOR, min !== null && min !== void 0 ? min : 0));
+            if (typeof max === "number") {
+                result = Math.min(result, max);
+            }
+            return result;
+        };
+        /** Clamps a width/height pair using `options.constraints`. */
+        ResizePlugin.prototype._clampSize = function (width, height) {
+            var _a;
+            var constraints = ((_a = this.options) === null || _a === void 0 ? void 0 : _a.constraints) || {};
+            return {
+                width: this._clampDimension(width, constraints.minWidth, constraints.maxWidth),
+                height: this._clampDimension(height, constraints.minHeight, constraints.maxHeight),
+            };
+        };
         ResizePlugin.prototype.initResizer = function () {
             var resizer = this.container.querySelector("#editor-resizer");
             if (!resizer) {
@@ -420,6 +443,7 @@
             }
             this.resizer = resizer;
             this.applyToolbarVisibility();
+            this._configureSizeToolbar();
         };
         /**
          * Applies the showToolbar/toolbar.sizeTools/toolbar.alignTools options
@@ -453,6 +477,48 @@
             var sizeLabel = this.resizer.querySelector(".size-label");
             if (sizeLabel) {
                 sizeLabel.style.display = ((_e = this.options) === null || _e === void 0 ? void 0 : _e.showSize) ? "" : "none";
+            }
+        };
+        /**
+         * Renders `toolbar.sizePresets` as quick-size buttons and applies
+         * `toolbar.sizeUnit` to the width input's suffix/max length. Re-run on
+         * every initResizer() call (like applyToolbarVisibility()) since the
+         * overlay element is reused across activations, which may carry
+         * different options than whichever activation first created it.
+         */
+        ResizePlugin.prototype._configureSizeToolbar = function () {
+            var _a, _b, _c;
+            if (!this.resizer) {
+                return;
+            }
+            var toolbarOptions = ((_a = this.options) === null || _a === void 0 ? void 0 : _a.toolbar) || {};
+            var unit = (_b = toolbarOptions.sizeUnit) !== null && _b !== void 0 ? _b : "%";
+            var presets = (_c = toolbarOptions.sizePresets) !== null && _c !== void 0 ? _c : [100, 50];
+            var sizeGroup = this.resizer.querySelector('[data-group="size"]');
+            if (sizeGroup) {
+                // Remove preset buttons rendered by a previous activation before
+                // re-rendering, since the overlay element is reused.
+                sizeGroup
+                    .querySelectorAll(".btn[data-percent]")
+                    .forEach(function (btn) { return btn.remove(); });
+                var inputWrapper_1 = sizeGroup.querySelector(".input-wrapper");
+                presets.forEach(function (percent) {
+                    var btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "btn";
+                    btn.dataset.type = "width";
+                    btn.dataset.percent = String(percent);
+                    btn.textContent = "".concat(percent, "%");
+                    sizeGroup.insertBefore(btn, inputWrapper_1);
+                });
+            }
+            var suffix = this.resizer.querySelector(".input-wrapper .suffix");
+            if (suffix) {
+                suffix.textContent = unit;
+            }
+            var input = this.resizer.querySelector('input[data-type="width"]');
+            if (input) {
+                input.setAttribute("maxlength", unit === "px" ? "5" : "3");
             }
         };
         ResizePlugin.prototype.positionResizerToTarget = function (el) {
@@ -534,7 +600,7 @@
          *    code path instead of duplicating close/cleanup logic here.
          */
         ResizePlugin.prototype.onKeyDown = function (e) {
-            var _a, _b, _c, _d, _e, _f, _g, _h;
+            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
             var target = e.target;
             if (!target.classList.contains("handler")) {
                 return;
@@ -563,22 +629,23 @@
             var step = e.shiftKey ? 10 : 1;
             var width = this.resizeTarget.clientWidth + delta[0] * step;
             var height = this.resizeTarget.clientHeight + delta[1] * step;
-            if (e.altKey) {
+            if (e.altKey || ((_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.constraints) === null || _b === void 0 ? void 0 : _b.lockAspectRatio)) {
                 var originSize = this.resizeTarget.originSize;
                 var rate = originSize.height / originSize.width;
                 height = rate * width;
             }
-            this.resizeTarget.style.setProperty("width", Math.max(width, 30) + "px");
-            this.resizeTarget.style.setProperty("height", Math.max(height, 30) + "px");
+            var clamped = this._clampSize(width, height);
+            this.resizeTarget.style.setProperty("width", clamped.width + "px");
+            this.resizeTarget.style.setProperty("height", clamped.height + "px");
             this.positionResizerToTarget(this.resizeTarget);
             this._syncPersistence();
             // Each keystroke is a complete, atomic resize gesture (there's no
             // natural discrete "gesture end" signal for individual keypresses like
             // there is for pointer drags), so start/resize/end all fire together.
-            (_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.onResizeStart) === null || _b === void 0 ? void 0 : _b.call(_a, this.resizeTarget);
-            (_d = (_c = this.options) === null || _c === void 0 ? void 0 : _c.onResize) === null || _d === void 0 ? void 0 : _d.call(_c, this.resizeTarget, this._buildChangeEvent());
-            (_f = (_e = this.options) === null || _e === void 0 ? void 0 : _e.onResizeEnd) === null || _f === void 0 ? void 0 : _f.call(_e, this.resizeTarget);
-            (_h = (_g = this.options) === null || _g === void 0 ? void 0 : _g.onChange) === null || _h === void 0 ? void 0 : _h.call(_g, this.resizeTarget);
+            (_d = (_c = this.options) === null || _c === void 0 ? void 0 : _c.onResizeStart) === null || _d === void 0 ? void 0 : _d.call(_c, this.resizeTarget);
+            (_f = (_e = this.options) === null || _e === void 0 ? void 0 : _e.onResize) === null || _f === void 0 ? void 0 : _f.call(_e, this.resizeTarget, this._buildChangeEvent());
+            (_h = (_g = this.options) === null || _g === void 0 ? void 0 : _g.onResizeEnd) === null || _h === void 0 ? void 0 : _h.call(_g, this.resizeTarget);
+            (_k = (_j = this.options) === null || _j === void 0 ? void 0 : _j.onChange) === null || _k === void 0 ? void 0 : _k.call(_j, this.resizeTarget);
         };
         ResizePlugin.prototype._setStylesForToolbar = function (type, styles) {
             var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
@@ -617,21 +684,56 @@
                 syncResizeStateToQuill(quill, this.resizeTarget);
             }
         };
+        /**
+         * Computes the CSS to apply for a given width preset percentage,
+         * honoring `toolbar.sizeUnit`:
+         * - `"%"` (default): a relative `width: N%;`.
+         * - `"px"`: an absolute width computed from the target's original size,
+         *   clamped to `options.constraints`, with `height: auto;` so images and
+         *   videos keep their intrinsic aspect ratio.
+         */
+        ResizePlugin.prototype._computeWidthStyles = function (percent) {
+            var _a, _b, _c, _d;
+            var unit = (_c = (_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.toolbar) === null || _b === void 0 ? void 0 : _b.sizeUnit) !== null && _c !== void 0 ? _c : "%";
+            if (unit === "px") {
+                var originSize = this.resizeTarget.originSize;
+                var baseWidth = (originSize === null || originSize === void 0 ? void 0 : originSize.width) || this.resizeTarget.clientWidth || 0;
+                var rawWidth = Math.round((baseWidth * percent) / 100);
+                var constraints = ((_d = this.options) === null || _d === void 0 ? void 0 : _d.constraints) || {};
+                var width = this._clampDimension(rawWidth, constraints.minWidth, constraints.maxWidth);
+                return "width:".concat(width, "px; height:auto;");
+            }
+            return "width:".concat(percent, "%;");
+        };
         ResizePlugin.prototype.toolbarInputChange = function (e) {
-            var _a;
+            var _a, _b, _c, _d, _e;
             var target = e.target;
             var type = (_a = target === null || target === void 0 ? void 0 : target.dataset) === null || _a === void 0 ? void 0 : _a.type;
-            var value = target.value;
-            if (type && Number(value)) {
-                this._setStylesForToolbar(type, "width: ".concat(Number(value), "%;"));
+            var value = Number(target.value);
+            if (type && value) {
+                var unit = (_d = (_c = (_b = this.options) === null || _b === void 0 ? void 0 : _b.toolbar) === null || _c === void 0 ? void 0 : _c.sizeUnit) !== null && _d !== void 0 ? _d : "%";
+                if (unit === "px") {
+                    var constraints = ((_e = this.options) === null || _e === void 0 ? void 0 : _e.constraints) || {};
+                    var width = this._clampDimension(value, constraints.minWidth, constraints.maxWidth);
+                    this._setStylesForToolbar(type, "width:".concat(width, "px; height:auto;"));
+                }
+                else {
+                    this._setStylesForToolbar(type, "width: ".concat(value, "%;"));
+                }
             }
         };
         ResizePlugin.prototype.toolbarClick = function (e) {
-            var _a, _b;
+            var _a, _b, _c;
             var target = e.target;
             var type = (_a = target === null || target === void 0 ? void 0 : target.dataset) === null || _a === void 0 ? void 0 : _a.type;
             if (type && target.classList.contains("btn")) {
-                this._setStylesForToolbar(type, (_b = target === null || target === void 0 ? void 0 : target.dataset) === null || _b === void 0 ? void 0 : _b.styles);
+                var percentAttr = (_b = target.dataset) === null || _b === void 0 ? void 0 : _b.percent;
+                if (type === "width" && percentAttr) {
+                    this._setStylesForToolbar(type, this._computeWidthStyles(Number(percentAttr)));
+                }
+                else {
+                    this._setStylesForToolbar(type, (_c = target === null || target === void 0 ? void 0 : target.dataset) === null || _c === void 0 ? void 0 : _c.styles);
+                }
             }
         };
         ResizePlugin.prototype.startResize = function (e) {
@@ -683,7 +785,7 @@
             (_e = (_d = this.options) === null || _d === void 0 ? void 0 : _d.onChange) === null || _e === void 0 ? void 0 : _e.call(_d, this.resizeTarget);
         };
         ResizePlugin.prototype.resizing = function (e) {
-            var _a, _b;
+            var _a, _b, _c, _d;
             if (!this.startResizePosition)
                 return;
             var deltaX = e.clientX - this.startResizePosition.left;
@@ -692,15 +794,16 @@
             var height = this.startResizePosition.height;
             width += deltaX;
             height += deltaY;
-            if (e.altKey) {
+            if (e.altKey || ((_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.constraints) === null || _b === void 0 ? void 0 : _b.lockAspectRatio)) {
                 var originSize = this.resizeTarget.originSize;
                 var rate = originSize.height / originSize.width;
                 height = rate * width;
             }
-            this.resizeTarget.style.setProperty("width", Math.max(width, 30) + "px");
-            this.resizeTarget.style.setProperty("height", Math.max(height, 30) + "px");
+            var clamped = this._clampSize(width, height);
+            this.resizeTarget.style.setProperty("width", clamped.width + "px");
+            this.resizeTarget.style.setProperty("height", clamped.height + "px");
             this.positionResizerToTarget(this.resizeTarget);
-            (_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.onResize) === null || _b === void 0 ? void 0 : _b.call(_a, this.resizeTarget, this._buildChangeEvent());
+            (_d = (_c = this.options) === null || _c === void 0 ? void 0 : _c.onResize) === null || _d === void 0 ? void 0 : _d.call(_c, this.resizeTarget, this._buildChangeEvent());
         };
         ResizePlugin.prototype.destroy = function () {
             var _a;
@@ -819,6 +922,20 @@
         iframe.referrerPolicy = "strict-origin-when-cross-origin";
         iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
     }
+    /**
+     * Merges the global `constraints` with any `constraintsByTag` override for
+     * the given tag (per-tag fields win), so e.g. `video`/`iframe` embeds can
+     * have a locked aspect ratio while `img` doesn't, without consumers having
+     * to duplicate the whole constraints object per tag.
+     */
+    function resolveConstraints(tagName, options) {
+        var _a;
+        var perTag = (_a = options === null || options === void 0 ? void 0 : options.constraintsByTag) === null || _a === void 0 ? void 0 : _a[tagName];
+        if (!(options === null || options === void 0 ? void 0 : options.constraints) && !perTag) {
+            return undefined;
+        }
+        return __assign(__assign({}, options === null || options === void 0 ? void 0 : options.constraints), perTag);
+    }
     function QuillResizeModule(quill, options) {
         var container = quill.root;
         var resizeTarge;
@@ -831,10 +948,12 @@
         registerResizeFormats(quill.constructor);
         var pluginOptions = __assign(__assign({}, options), { __quillInstance: quill });
         var onContainerClick = function (e) {
+            var _a;
             var target = e.target;
-            if (e.target && ["img", "video"].includes(target.tagName.toLowerCase())) {
+            var tagName = (_a = target === null || target === void 0 ? void 0 : target.tagName) === null || _a === void 0 ? void 0 : _a.toLowerCase();
+            if (e.target && ["img", "video"].includes(tagName)) {
                 resizeTarge = target;
-                resizePlugin = new ResizePlugin(target, container.parentElement, pluginOptions);
+                resizePlugin = new ResizePlugin(target, container.parentElement, __assign(__assign({}, pluginOptions), { constraints: resolveConstraints(tagName, options) }));
             }
         };
         container.addEventListener("click", onContainerClick);
@@ -845,7 +964,7 @@
                 trackedIframes.add(item);
                 IframeClick.track(item, function () {
                     resizeTarge = item;
-                    resizePlugin = new ResizePlugin(item, container.parentElement, __assign(__assign({}, pluginOptions), { 
+                    resizePlugin = new ResizePlugin(item, container.parentElement, __assign(__assign({}, pluginOptions), { constraints: resolveConstraints("iframe", options), 
                         // Don't steal focus onto the resize handle here: this callback
                         // fires from IframeClick's polling loop, which itself relies on
                         // `document.activeElement === iframe` to know the iframe is

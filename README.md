@@ -20,6 +20,7 @@ A modern, secure module for the Quill rich text editor that allows you to resize
 - 🎨 **Customizable Toolbar** - Show/hide alignment and size tools
 - 📏 **Size Display** - Optional size indicator
 - 🔔 **Typed Callbacks** - `onSelect`, `onResizeStart`, `onResize`, `onResizeEnd`, `onAlignChange`
+- 📐 **Resize Constraints** - min/max width/height, aspect-ratio locking (globally or per embed tag), and `%`/`px` size modes with configurable presets
 
 ## 🚀 Demo
 
@@ -100,6 +101,10 @@ const quill = new Quill("#editor", {
 | `locale` | object | `{}` | Custom language strings |
 | `toolbar.sizeTools` | boolean | `true` | Show size adjustment tools |
 | `toolbar.alignTools` | boolean | `true` | Show alignment tools |
+| `toolbar.sizePresets` | number[] | `[100, 50]` | Percentages rendered as quick-size preset buttons |
+| `toolbar.sizeUnit` | `"%"` \| `"px"` | `"%"` | Unit applied by preset buttons and the width input (see [Resize Constraints & Modes](#-resize-constraints--modes)) |
+| `constraints` | `ResizeConstraints` | `{}` | Min/max width & height and aspect-ratio locking, applied to every target (see below) |
+| `constraintsByTag` | object | `{}` | Per-tag override of `constraints` (`{ img, video, iframe }`) |
 
 > `toolbar.alingTools` (the original, misspelled name) still works as a
 > deprecated alias for `toolbar.alignTools`, but new code should use the
@@ -166,6 +171,61 @@ const quill = new Quill("#editor", {
   },
 });
 ```
+
+## 📐 Resize Constraints & Modes
+
+Control the bounds and behavior of every resize gesture (pointer drag,
+keyboard arrow steps, and `px`-unit toolbar actions):
+
+```javascript
+const quill = new Quill("#editor", {
+  modules: {
+    resize: {
+      constraints: {
+        minWidth: 80,
+        maxWidth: 800,
+        minHeight: 60,
+        maxHeight: 600,
+        lockAspectRatio: true, // always preserve ratio, without needing Alt
+      },
+      // Override constraints for specific embed tags — per-tag fields win
+      // over the matching field in the global `constraints` above.
+      constraintsByTag: {
+        video: { lockAspectRatio: true },
+        iframe: { lockAspectRatio: true, minWidth: 320 },
+      },
+    },
+  },
+});
+```
+
+> An absolute 30px minimum always applies as a safety floor, even if a
+> smaller `minWidth`/`minHeight` is configured.
+
+Toggle between relative (`%`) and absolute (`px`) sizing for the toolbar's
+preset buttons and width input, and customize which percentages are
+offered as presets:
+
+```javascript
+const quill = new Quill("#editor", {
+  modules: {
+    resize: {
+      toolbar: {
+        sizePresets: [100, 75, 50, 25], // default is [100, 50]
+        sizeUnit: "px", // default is "%"; presets/input become fixed px sizes
+      },
+    },
+  },
+});
+```
+
+In `"%"` mode (the default) the preset buttons/input set a relative
+`width: N%;`, so the embed keeps resizing with its container. In `"px"`
+mode they compute an absolute width from the embed's original size
+(e.g. 50% of a 200px-wide image becomes `width: 100px;`) and set
+`height: auto;`, so the embed keeps a fixed size regardless of the
+container's width. `minWidth`/`maxWidth` constraints are enforced on
+`px`-mode preset/input changes.
 
 ## 🔧 Advanced Configuration
 

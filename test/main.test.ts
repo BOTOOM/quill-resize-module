@@ -88,6 +88,42 @@ describe("QuillResizeModule", () => {
     expect(onSelect).toHaveBeenCalledWith(img);
   });
 
+  it("applies constraintsByTag for the clicked target's tag", () => {
+    const { wrapper, root } = createEditor();
+    const img = document.createElement("img");
+    root.appendChild(img);
+    Object.defineProperty(img, "clientWidth", {
+      configurable: true,
+      value: 100,
+    });
+    Object.defineProperty(img, "clientHeight", {
+      configurable: true,
+      value: 80,
+    });
+    const quill = createQuillMock(root);
+
+    QuillResizeModule(quill, {
+      constraintsByTag: { img: { maxWidth: 120 }, video: { maxWidth: 9999 } },
+    });
+    img.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    const handler = wrapper.querySelector(".handler") as HTMLElement;
+    handler.dispatchEvent(
+      new PointerEvent("pointerdown", {
+        bubbles: true,
+        button: 0,
+        pointerId: 1,
+        clientX: 0,
+        clientY: 0,
+      })
+    );
+    window.dispatchEvent(
+      new PointerEvent("pointermove", { clientX: 500, clientY: 500 })
+    );
+
+    expect(img.style.width).toBe("120px");
+  });
+
   it("ignores clicks on elements that are not img/video", () => {
     const { wrapper, root } = createEditor();
     const paragraph = document.createElement("p");
