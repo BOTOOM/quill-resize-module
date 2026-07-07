@@ -23,6 +23,7 @@ A modern, secure module for the Quill rich text editor that allows you to resize
 - 📐 **Resize Constraints** - min/max width/height, aspect-ratio locking (globally or per embed tag), and `%`/`px` size modes with configurable presets
 - 🧩 **Custom Embeds** - configure which tags trigger the overlay (`embedTags`) or resolve arbitrary wrapper elements (`resolveEmbed`) without forking
 - ✏️ **Media Attributes** - edit `alt` text and `title` from the toolbar, persisted through Quill's Delta model
+- ⬆️ **Upload Hooks & Compression** - intercept pasted/dropped images with `onImageUpload` to send them to your own upload pipeline, with optional client-side downscaling via `imageCompression`
 
 ## 🚀 Demo
 
@@ -110,6 +111,8 @@ const quill = new Quill("#editor", {
 | `constraintsByTag` | object | `{}` | Per-tag override of `constraints` (e.g. `{ img: {...}, video: {...}, myEmbed: {...} }`) |
 | `embedTags` | string[] | `["img", "video"]` | Tags that trigger the resize overlay on click. **Fully replaces** the default list — set it to add custom tags (e.g. `["img", "video", "canvas"]`) |
 | `resolveEmbed` | function | `undefined` | Custom resolver `(clickedTarget, event) => HTMLElement \| null` to support arbitrary wrapper elements (see [Custom Embeds](#-custom-embeds)) |
+| `onImageUpload` | function | `undefined` | `(file: File) => Promise<string> \| string` called for each pasted/dropped image; its resolved URL is inserted into the editor (see [Upload Hooks & Compression](#️-upload-hooks--compression)) |
+| `imageCompression` | `ImageCompressionOptions \| false` | `undefined` | Optional client-side downscaling applied before `onImageUpload`. Only takes effect when `onImageUpload` is set |
 
 > `toolbar.alingTools` (the original, misspelled name) still works as a
 > deprecated alias for `toolbar.alignTools`, but new code should use the
@@ -306,6 +309,72 @@ module falls back to `embedTags`-based matching on the clicked element's
 own tag name. Both `constraintsByTag` and persistence through Quill's
 Delta model (for blot-backed elements) work with custom embeds exactly
 as they do for `img`/`video`.
+
+## ⬆️ Upload Hooks & Compression
+
+By default, pasting or dropping an image into the editor is handled by
+Quill/the browser's native clipboard behavior (usually inlined as a
+`data:` URL). Setting `onImageUpload` lets you intercept that flow and
+send the file to your own upload pipeline instead — the module inserts
+whatever URL you resolve:
+
+```javascript
+const quill = new Quill("#editor", {
+  modules: {
+    resize: {
+      async onImageUpload(file) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        const { url } = await response.json();
+        return url;
+      },
+    },
+  },
+});
+```
+
+- `onImageUpload` is only invoked for **image** files pasted/dropped
+  directly into the editor; non-image files and drag/drop of text or
+  other content are left untouched.
+- If `onImageUpload` is **not** configured, paste/drop behavior is
+  completely unchanged — this feature is fully opt-in and backward
+  compatible.
+- Returning a falsy value (e.g. `undefined` or an empty string) skips
+  insertion for that file, which is useful if the upload fails and you
+  want to show your own error UI instead.
+- Multiple pasted/dropped files are uploaded and inserted in order.
+
+Optionally, downscale images client-side before they reach
+`onImageUpload` with `imageCompression`:
+
+```javascript
+const quill = new Quill("#editor", {
+  modules: {
+    resize: {
+      onImageUpload /* ... */,
+      imageCompression: {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        mimeType: "image/jpeg",
+        quality: 0.8,
+      },
+    },
+  },
+});
+```
+
+`imageCompression` uses an in-memory `<canvas>` to resize/re-encode the
+image and never upscales images that are already smaller than the
+configured bounds. It only has an effect when paired with
+`onImageUpload` (the paste/drop interceptor doesn't activate otherwise),
+and it degrades gracefully — if canvas 2D rendering isn't available in
+the current environment, or the compression step throws for any
+reason, the original file is passed through unchanged instead of
+failing the upload.
 
 ## 🔧 Advanced Configuration
 

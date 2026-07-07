@@ -1,11 +1,16 @@
 import type { ResizeChangeEvent, ResizeMediaAttributes } from "./ResizePlugin";
 import { Locale } from "./i18n";
 import type { AlignValue } from "./formats";
+import type { ImageCompressionOptions } from "./upload";
 interface Quill {
     container: HTMLElement;
     root: HTMLElement;
     on: any;
     off?: any;
+    getSelection?: any;
+    getLength?: any;
+    insertEmbed?: any;
+    setSelection?: any;
 }
 interface ToolbarOptions {
     /** Show/hide the width/size buttons in the toolbar. Default: true. */
@@ -118,6 +123,25 @@ interface QuillResizeModuleOptions {
      * `embedTags`-based tag matching.
      */
     resolveEmbed?: (clickedTarget: HTMLElement, event: MouseEvent) => HTMLElement | null | undefined;
+    /**
+     * Opt-in hook for wiring pasted/dropped images into a real upload
+     * pipeline (e.g. upload to S3/a CDN and return the resulting URL).
+     * When set, the module intercepts image files pasted or dropped into
+     * the editor, calls this hook, and inserts the resolved URL via
+     * `insertEmbed` — instead of letting the browser/Quill's own clipboard
+     * module embed them as base64 data URLs. Not configuring this leaves
+     * paste/drop behavior completely untouched (fully backward compatible).
+     * May return a plain string or a Promise resolving to one.
+     */
+    onImageUpload?: (file: File) => Promise<string> | string;
+    /**
+     * Best-effort client-side downscaling/re-encoding applied to
+     * pasted/dropped images before they're passed to `onImageUpload`. Only
+     * takes effect when `onImageUpload` is also configured. Set to `false`
+     * (default) to disable. Gracefully no-ops (passes the original file
+     * through unchanged) in environments without canvas 2D support.
+     */
+    imageCompression?: ImageCompressionOptions | false;
     [index: string]: any;
 }
 /**
@@ -134,4 +158,4 @@ interface ResizeModuleHandle {
 }
 declare function QuillResizeModule(quill: Quill, options?: QuillResizeModuleOptions): ResizeModuleHandle;
 export default QuillResizeModule;
-export type { QuillResizeModuleOptions, ToolbarOptions, ResizeModuleHandle, ResizeChangeEvent, ResizeConstraints, ResizeMediaAttributes, };
+export type { QuillResizeModuleOptions, ToolbarOptions, ResizeModuleHandle, ResizeChangeEvent, ResizeConstraints, ResizeMediaAttributes, ImageCompressionOptions, };

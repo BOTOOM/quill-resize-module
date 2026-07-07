@@ -450,6 +450,29 @@ Impacto:
 
 - Diferencia el producto y resuelve necesidades frecuentes.
 
+**✅ Implementado**: nuevo modulo `src/upload.ts` con `extractImageFiles()`
+y `compressImage()` (basado en `<canvas>`, con degradacion elegante si el
+contexto 2D no esta disponible o si cualquier paso falla, devolviendo el
+archivo original sin romper el flujo). `src/main.ts` agrega las opciones
+`onImageUpload?: (file: File) => Promise<string> | string` e
+`imageCompression?: ImageCompressionOptions | false`, y engancha listeners
+de `paste`/`drop` sobre el contenedor del editor: si `onImageUpload` no
+esta configurado, ambos listeners no hacen nada (sin `preventDefault`),
+preservando el comportamiento nativo exacto para cualquier consumidor
+existente. Cuando esta configurado, se filtran solo archivos de imagen,
+se aplica `imageCompression` (si existe) antes de invocar
+`onImageUpload`, y la URL resuelta se inserta en la posicion del cursor
+via `insertEmbed`, avanzando la seleccion para insertar varios archivos
+en orden. El `destroy()` del handle retorno tambien remueve ambos
+listeners. Cubierto por `test/upload.test.ts` (6 tests para
+`extractImageFiles`/`compressImage`, incluyendo el contrato de
+degradacion elegante) y por un nuevo `describe("image upload hooks")` en
+`test/main.test.ts` (7 tests: no-intercepcion sin `onImageUpload`, paste
+y drop exitosos con insercion de URL, archivos no-imagen ignorados, URL
+falsy que se salta la insercion, y limpieza de listeners tras
+`destroy()`). README actualizado con la seccion "Upload Hooks &
+Compression", tabla de opciones y bullet de features.
+
 ## P3 - Pulido de producto
 
 ### 11. Packaging moderno

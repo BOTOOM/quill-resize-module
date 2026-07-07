@@ -4,12 +4,18 @@ import IframeOnClick from "./IframeClick";
 import { Locale } from "./i18n";
 import { registerResizeFormats } from "./formats";
 import type { AlignValue } from "./formats";
+import { compressImage, extractImageFiles } from "./upload";
+import type { ImageCompressionOptions } from "./upload";
 
 interface Quill {
   container: HTMLElement;
   root: HTMLElement; // edit area
   on: any;
   off?: any;
+  getSelection?: any;
+  getLength?: any;
+  insertEmbed?: any;
+  setSelection?: any;
 }
 interface ToolbarOptions {
   /** Show/hide the width/size buttons in the toolbar. Default: true. */
@@ -130,6 +136,25 @@ interface QuillResizeModuleOptions {
     clickedTarget: HTMLElement,
     event: MouseEvent
   ) => HTMLElement | null | undefined;
+  /**
+   * Opt-in hook for wiring pasted/dropped images into a real upload
+   * pipeline (e.g. upload to S3/a CDN and return the resulting URL).
+   * When set, the module intercepts image files pasted or dropped into
+   * the editor, calls this hook, and inserts the resolved URL via
+   * `insertEmbed` — instead of letting the browser/Quill's own clipboard
+   * module embed them as base64 data URLs. Not configuring this leaves
+   * paste/drop behavior completely untouched (fully backward compatible).
+   * May return a plain string or a Promise resolving to one.
+   */
+  onImageUpload?: (file: File) => Promise<string> | string;
+  /**
+   * Best-effort client-side downscaling/re-encoding applied to
+   * pasted/dropped images before they're passed to `onImageUpload`. Only
+   * takes effect when `onImageUpload` is also configured. Set to `false`
+   * (default) to disable. Gracefully no-ops (passes the original file
+   * through unchanged) in environments without canvas 2D support.
+   */
+  imageCompression?: ImageCompressionOptions | false;
   [index: string]: any;
 }
 
@@ -208,6 +233,36 @@ function resolveConstraints(
   return { ...options?.constraints, ...perTag };
 }
 
+/**
+ * Runs each pasted/dropped image file through `imageCompression` (if
+ * configured) and `onImageUpload`, then inserts the resolved URL at the
+ * current selection (or the end of the document if there's none), moving
+ * the cursor past each inserted image so multiple files insert in order.
+ */
+async function insertUploadedImages(
+  files: File[],
+  quill: Quill,
+  options: QuillResizeModuleOptions
+): Promise<void> {
+  for (const file of files) {
+    const processed = await compressImage(file, options.imageCompression);
+    const uploadFile: File =
+      processed instanceof File
+        ? processed
+        : new File([processed], file.name, {
+            type: processed.type || file.type,
+          });
+    const url = await options.onImageUpload?.(uploadFile);
+    if (!url) {
+      continue;
+    }
+    const selection = quill.getSelection?.(true);
+    const index = selection ? selection.index : quill.getLength?.() ?? 0;
+    quill.insertEmbed?.(index, "image", url, "user");
+    quill.setSelection?.(index + 1, 0, "silent");
+  }
+}
+
 const DEFAULT_EMBED_TAGS = ["img", "video"];
 
 /**
@@ -270,6 +325,37 @@ function QuillResizeModule(
   };
   container.addEventListener("click", onContainerClick);
 
+  // Opt-in image upload interception: only takes over paste/drop handling
+  // for image files when `onImageUpload` is configured, so default
+  // browser/Quill clipboard behavior is unaffected otherwise.
+  const onImagePaste = (e: ClipboardEvent) => {
+    if (!options?.onImageUpload) {
+      return;
+    }
+    const files = extractImageFiles(e.clipboardData?.files);
+    if (files.length === 0) {
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    void insertUploadedImages(files, quill, options);
+  };
+  container.addEventListener("paste", onImagePaste as EventListener);
+
+  const onImageDrop = (e: DragEvent) => {
+    if (!options?.onImageUpload) {
+      return;
+    }
+    const files = extractImageFiles(e.dataTransfer?.files);
+    if (files.length === 0) {
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    void insertUploadedImages(files, quill, options);
+  };
+  container.addEventListener("drop", onImageDrop as EventListener);
+
   const onTextChange = (_delta: any, _oldDelta: any, _source: string) => {
     // Re-scan iframes after each text change to (re)apply resize tracking
     container.querySelectorAll("iframe").forEach((item: HTMLIFrameElement) => {
@@ -324,6 +410,8 @@ function QuillResizeModule(
      */
     destroy() {
       container.removeEventListener("click", onContainerClick);
+      container.removeEventListener("paste", onImagePaste as EventListener);
+      container.removeEventListener("drop", onImageDrop as EventListener);
       quill.off?.("text-change", onTextChange);
       document.removeEventListener("pointerdown", onOutsidePointerDown, {
         capture: true,
@@ -345,4 +433,5 @@ export type {
   ResizeChangeEvent,
   ResizeConstraints,
   ResizeMediaAttributes,
+  ImageCompressionOptions,
 };

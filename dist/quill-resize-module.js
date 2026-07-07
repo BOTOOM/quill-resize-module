@@ -46,6 +46,44 @@
         return __assign.apply(this, arguments);
     };
 
+    function __awaiter(thisArg, _arguments, P, generator) {
+        function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+        return new (P || (P = Promise))(function (resolve, reject) {
+            function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+            function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+            function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+            step((generator = generator.apply(thisArg, _arguments || [])).next());
+        });
+    }
+
+    function __generator(thisArg, body) {
+        var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+        return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+        function verb(n) { return function (v) { return step([n, v]); }; }
+        function step(op) {
+            if (f) throw new TypeError("Generator is already executing.");
+            while (g && (g = 0, op[0] && (_ = 0)), _) try {
+                if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+                if (y = 0, t) op = [op[0] & 2, t.value];
+                switch (op[0]) {
+                    case 0: case 1: t = op; break;
+                    case 4: _.label++; return { value: op[1], done: false };
+                    case 5: _.label++; y = op[1]; op = [0]; continue;
+                    case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                    default:
+                        if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                        if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                        if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                        if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                        if (t[2]) _.ops.pop();
+                        _.trys.pop(); continue;
+                }
+                op = body.call(thisArg, _);
+            } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+            if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+        }
+    }
+
     typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
         var e = new Error(message);
         return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
@@ -1033,6 +1071,124 @@
         return IframeClick;
     }());
 
+    /**
+     * Optional hooks for wiring pasted/dropped images into a real upload
+     * pipeline, with best-effort client-side compression before upload.
+     *
+     * Both are entirely opt-in: this module only intercepts paste/drop events
+     * when `onImageUpload` is configured (see `wireImageUpload` in main.ts), so
+     * default behavior (Quill's own native image-paste-as-base64 handling) is
+     * completely unaffected for consumers who don't use this feature.
+     */
+    /**
+     * Extracts image files from a paste/drop event's file list (or clipboard
+     * items), ignoring anything that isn't an image (e.g. pasted text,
+     * dropped non-image files).
+     */
+    function extractImageFiles(source) {
+        if (!source) {
+            return [];
+        }
+        var files = [];
+        for (var i = 0; i < source.length; i++) {
+            var entry = source[i];
+            var file = "getAsFile" in entry && typeof entry.getAsFile === "function"
+                ? entry.getAsFile()
+                : entry;
+            if (file && file.type && file.type.startsWith("image/")) {
+                files.push(file);
+            }
+        }
+        return files;
+    }
+    function readFileAsDataURL(file) {
+        return new Promise(function (resolve, reject) {
+            var reader = new FileReader();
+            reader.onload = function () { return resolve(reader.result); };
+            reader.onerror = function () { return reject(reader.error); };
+            reader.readAsDataURL(file);
+        });
+    }
+    function loadImage(src) {
+        return new Promise(function (resolve, reject) {
+            var img = new Image();
+            img.onload = function () { return resolve(img); };
+            img.onerror = function () { return reject(new Error("Failed to load image for compression")); };
+            img.src = src;
+        });
+    }
+    /** Computes a downscaled (never upscaled) size that fits within maxWidth/maxHeight, preserving aspect ratio. */
+    function computeTargetSize(width, height, options) {
+        var ratio = 1;
+        if (options.maxWidth && width > options.maxWidth) {
+            ratio = Math.min(ratio, options.maxWidth / width);
+        }
+        if (options.maxHeight && height > options.maxHeight) {
+            ratio = Math.min(ratio, options.maxHeight / height);
+        }
+        return {
+            width: Math.round(width * ratio),
+            height: Math.round(height * ratio),
+        };
+    }
+    /**
+     * Attempts to downscale/re-encode an image file via an offscreen canvas.
+     * Best-effort: gracefully returns the original file unchanged if
+     * `options` is falsy, or if the runtime doesn't support a 2D canvas
+     * context (e.g. some headless/legacy environments) — this is a
+     * progressive enhancement, not a guarantee, so callers must be prepared
+     * to receive the original file back.
+     */
+    function compressImage(file, options) {
+        return __awaiter(this, void 0, void 0, function () {
+            var canvas, ctx, dataUrl, img, sourceWidth, sourceHeight, _a, width, height, mimeType_1, quality_1;
+            var _c;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0:
+                        if (!options) {
+                            return [2 /*return*/, file];
+                        }
+                        if (typeof document === "undefined" || typeof Image === "undefined") {
+                            return [2 /*return*/, file];
+                        }
+                        canvas = document.createElement("canvas");
+                        ctx = canvas.getContext("2d");
+                        if (!ctx) {
+                            return [2 /*return*/, file];
+                        }
+                        _d.label = 1;
+                    case 1:
+                        _d.trys.push([1, 5, , 6]);
+                        return [4 /*yield*/, readFileAsDataURL(file)];
+                    case 2:
+                        dataUrl = _d.sent();
+                        return [4 /*yield*/, loadImage(dataUrl)];
+                    case 3:
+                        img = _d.sent();
+                        sourceWidth = img.naturalWidth || img.width;
+                        sourceHeight = img.naturalHeight || img.height;
+                        _a = computeTargetSize(sourceWidth, sourceHeight, options), width = _a.width, height = _a.height;
+                        canvas.width = width || sourceWidth;
+                        canvas.height = height || sourceHeight;
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        mimeType_1 = options.mimeType || file.type || "image/jpeg";
+                        quality_1 = (_c = options.quality) !== null && _c !== void 0 ? _c : 0.8;
+                        return [4 /*yield*/, new Promise(function (resolve) {
+                                canvas.toBlob(function (blob) { return resolve(blob || file); }, mimeType_1, quality_1);
+                            })];
+                    case 4: return [2 /*return*/, _d.sent()];
+                    case 5:
+                        _d.sent();
+                        // Decoding/drawing failed (corrupt file, unsupported format, etc.) —
+                        // fall back to the original file rather than blocking the upload.
+                        return [2 /*return*/, file];
+                    case 6: return [2 /*return*/];
+                }
+            });
+        });
+    }
+
     function isYouTubeUrl(url) {
         return /(?:youtube\.com|youtu\.be)/i.test(url);
     }
@@ -1083,6 +1239,51 @@
         }
         return __assign(__assign({}, options === null || options === void 0 ? void 0 : options.constraints), perTag);
     }
+    /**
+     * Runs each pasted/dropped image file through `imageCompression` (if
+     * configured) and `onImageUpload`, then inserts the resolved URL at the
+     * current selection (or the end of the document if there's none), moving
+     * the cursor past each inserted image so multiple files insert in order.
+     */
+    function insertUploadedImages(files, quill, options) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _i, files_1, file, processed, uploadFile, url, selection, index;
+            var _a, _b, _c, _d, _e, _f;
+            return __generator(this, function (_g) {
+                switch (_g.label) {
+                    case 0:
+                        _i = 0, files_1 = files;
+                        _g.label = 1;
+                    case 1:
+                        if (!(_i < files_1.length)) return [3 /*break*/, 5];
+                        file = files_1[_i];
+                        return [4 /*yield*/, compressImage(file, options.imageCompression)];
+                    case 2:
+                        processed = _g.sent();
+                        uploadFile = processed instanceof File
+                            ? processed
+                            : new File([processed], file.name, {
+                                type: processed.type || file.type,
+                            });
+                        return [4 /*yield*/, ((_a = options.onImageUpload) === null || _a === void 0 ? void 0 : _a.call(options, uploadFile))];
+                    case 3:
+                        url = _g.sent();
+                        if (!url) {
+                            return [3 /*break*/, 4];
+                        }
+                        selection = (_b = quill.getSelection) === null || _b === void 0 ? void 0 : _b.call(quill, true);
+                        index = selection ? selection.index : (_d = (_c = quill.getLength) === null || _c === void 0 ? void 0 : _c.call(quill)) !== null && _d !== void 0 ? _d : 0;
+                        (_e = quill.insertEmbed) === null || _e === void 0 ? void 0 : _e.call(quill, index, "image", url, "user");
+                        (_f = quill.setSelection) === null || _f === void 0 ? void 0 : _f.call(quill, index + 1, 0, "silent");
+                        _g.label = 4;
+                    case 4:
+                        _i++;
+                        return [3 /*break*/, 1];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    }
     var DEFAULT_EMBED_TAGS = ["img", "video"];
     /**
      * Determines which element (if any) should become the resize target for a
@@ -1121,6 +1322,37 @@
             }
         };
         container.addEventListener("click", onContainerClick);
+        // Opt-in image upload interception: only takes over paste/drop handling
+        // for image files when `onImageUpload` is configured, so default
+        // browser/Quill clipboard behavior is unaffected otherwise.
+        var onImagePaste = function (e) {
+            var _a;
+            if (!(options === null || options === void 0 ? void 0 : options.onImageUpload)) {
+                return;
+            }
+            var files = extractImageFiles((_a = e.clipboardData) === null || _a === void 0 ? void 0 : _a.files);
+            if (files.length === 0) {
+                return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            void insertUploadedImages(files, quill, options);
+        };
+        container.addEventListener("paste", onImagePaste);
+        var onImageDrop = function (e) {
+            var _a;
+            if (!(options === null || options === void 0 ? void 0 : options.onImageUpload)) {
+                return;
+            }
+            var files = extractImageFiles((_a = e.dataTransfer) === null || _a === void 0 ? void 0 : _a.files);
+            if (files.length === 0) {
+                return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            void insertUploadedImages(files, quill, options);
+        };
+        container.addEventListener("drop", onImageDrop);
         var onTextChange = function (_delta, _oldDelta, _source) {
             // Re-scan iframes after each text change to (re)apply resize tracking
             container.querySelectorAll("iframe").forEach(function (item) {
@@ -1169,6 +1401,8 @@
             destroy: function () {
                 var _a, _b;
                 container.removeEventListener("click", onContainerClick);
+                container.removeEventListener("paste", onImagePaste);
+                container.removeEventListener("drop", onImageDrop);
                 (_a = quill.off) === null || _a === void 0 ? void 0 : _a.call(quill, "text-change", onTextChange);
                 document.removeEventListener("pointerdown", onOutsidePointerDown, {
                     capture: true,

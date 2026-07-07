@@ -21,7 +21,23 @@ function createQuillMock(root: HTMLElement): QuillLike & {
     emit(event: string, ...args: unknown[]) {
       (handlers[event] || []).forEach((cb) => cb(...args));
     },
+    getSelection: vi.fn(() => ({ index: 0, length: 0 })),
+    getLength: vi.fn(() => 0),
+    insertEmbed: vi.fn(),
+    setSelection: vi.fn(),
   };
+}
+
+function makeImageFile(name = "photo.png", type = "image/png"): File {
+  return new File(["fake-bytes"], name, { type });
+}
+
+function makeTextFile(name = "notes.txt", type = "text/plain"): File {
+  return new File(["hello"], name, { type });
+}
+
+function fakeFileList(files: File[]): FileList {
+  return files as unknown as FileList;
 }
 
 function createEditor(): { wrapper: HTMLElement; root: HTMLElement } {
@@ -363,5 +379,143 @@ describe("QuillResizeModule", () => {
         "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
       );
     });
+  });
+});
+
+describe("image upload hooks", () => {
+  it("does not intercept paste when onImageUpload is not configured", () => {
+    const { root } = createEditor();
+    const quill = createQuillMock(root);
+    QuillResizeModule(quill);
+
+    const event = new Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", {
+      value: { files: fakeFileList([makeImageFile()]) },
+    });
+    const preventDefault = vi.spyOn(event, "preventDefault");
+    root.dispatchEvent(event);
+
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(quill.insertEmbed).not.toHaveBeenCalled();
+  });
+
+  it("does not intercept drop when onImageUpload is not configured", () => {
+    const { root } = createEditor();
+    const quill = createQuillMock(root);
+    QuillResizeModule(quill);
+
+    const event = new Event("drop", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "dataTransfer", {
+      value: { files: fakeFileList([makeImageFile()]) },
+    });
+    const preventDefault = vi.spyOn(event, "preventDefault");
+    root.dispatchEvent(event);
+
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(quill.insertEmbed).not.toHaveBeenCalled();
+  });
+
+  it("intercepts a pasted image, calls onImageUpload, and inserts the resolved URL", async () => {
+    const { root } = createEditor();
+    const quill = createQuillMock(root);
+    const onImageUpload = vi.fn().mockResolvedValue("https://cdn.test/a.png");
+    QuillResizeModule(quill, { onImageUpload });
+
+    const event = new Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", {
+      value: { files: fakeFileList([makeImageFile()]) },
+    });
+    const preventDefault = vi.spyOn(event, "preventDefault");
+    root.dispatchEvent(event);
+
+    // insertUploadedImages runs asynchronously (await compressImage/onImageUpload).
+    await vi.waitFor(() => {
+      expect(quill.insertEmbed).toHaveBeenCalledWith(
+        0,
+        "image",
+        "https://cdn.test/a.png",
+        "user"
+      );
+    });
+
+    expect(preventDefault).toHaveBeenCalled();
+    expect(onImageUpload).toHaveBeenCalledTimes(1);
+    expect(quill.setSelection).toHaveBeenCalledWith(1, 0, "silent");
+  });
+
+  it("intercepts a dropped image, calls onImageUpload, and inserts the resolved URL", async () => {
+    const { root } = createEditor();
+    const quill = createQuillMock(root);
+    const onImageUpload = vi.fn().mockResolvedValue("https://cdn.test/b.png");
+    QuillResizeModule(quill, { onImageUpload });
+
+    const event = new Event("drop", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "dataTransfer", {
+      value: { files: fakeFileList([makeImageFile("dropped.png")]) },
+    });
+    const preventDefault = vi.spyOn(event, "preventDefault");
+    root.dispatchEvent(event);
+
+    await vi.waitFor(() => {
+      expect(quill.insertEmbed).toHaveBeenCalledWith(
+        0,
+        "image",
+        "https://cdn.test/b.png",
+        "user"
+      );
+    });
+
+    expect(preventDefault).toHaveBeenCalled();
+  });
+
+  it("ignores non-image files in a paste event and leaves native behavior untouched", () => {
+    const { root } = createEditor();
+    const quill = createQuillMock(root);
+    const onImageUpload = vi.fn();
+    QuillResizeModule(quill, { onImageUpload });
+
+    const event = new Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", {
+      value: { files: fakeFileList([makeTextFile()]) },
+    });
+    const preventDefault = vi.spyOn(event, "preventDefault");
+    root.dispatchEvent(event);
+
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(onImageUpload).not.toHaveBeenCalled();
+  });
+
+  it("skips insertion when onImageUpload resolves to a falsy URL", async () => {
+    const { root } = createEditor();
+    const quill = createQuillMock(root);
+    const onImageUpload = vi.fn().mockResolvedValue("");
+    QuillResizeModule(quill, { onImageUpload });
+
+    const event = new Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", {
+      value: { files: fakeFileList([makeImageFile()]) },
+    });
+    root.dispatchEvent(event);
+
+    await vi.waitFor(() => {
+      expect(onImageUpload).toHaveBeenCalledTimes(1);
+    });
+    expect(quill.insertEmbed).not.toHaveBeenCalled();
+  });
+
+  it("removes paste/drop listeners after destroy() so upload hooks stop firing", () => {
+    const { root } = createEditor();
+    const quill = createQuillMock(root);
+    const onImageUpload = vi.fn().mockResolvedValue("https://cdn.test/c.png");
+    const handle = QuillResizeModule(quill, { onImageUpload });
+    handle.destroy();
+
+    const event = new Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", {
+      value: { files: fakeFileList([makeImageFile()]) },
+    });
+    root.dispatchEvent(event);
+
+    expect(onImageUpload).not.toHaveBeenCalled();
   });
 });
