@@ -1,4 +1,4 @@
-import type { ResizeChangeEvent } from "./ResizePlugin";
+import type { ResizeChangeEvent, ResizeMediaAttributes } from "./ResizePlugin";
 import { Locale } from "./i18n";
 import type { AlignValue } from "./formats";
 interface Quill {
@@ -17,6 +17,11 @@ interface ToolbarOptions {
      * with the previous (misspelled) option name.
      */
     alingTools?: boolean;
+    /**
+     * Show/hide the "edit attributes" button that opens a small panel for
+     * editing `alt` text (images only) and `title`. Default: true.
+     */
+    attributesTool?: boolean;
     /**
      * Percentages rendered as quick-size preset buttons. Default: `[100, 50]`
      * (matching the library's previous hardcoded 100%/50% buttons).
@@ -74,6 +79,12 @@ interface QuillResizeModuleOptions {
     onResizeEnd?: (element: HTMLElement) => void;
     /** Fired specifically when the alignment (left/center/right/none) changes. */
     onAlignChange?: (element: HTMLElement, align: AlignValue | null) => void;
+    /**
+     * Fired when `alt`/`title` are saved through the attributes panel.
+     * Receives only the fields that were actually present in the panel
+     * (`alt` is omitted for non-`img` targets).
+     */
+    onAttributesChange?: (element: HTMLElement, attrs: ResizeMediaAttributes) => void;
     /** Show/hide the whole floating toolbar. Default: true. */
     showToolbar?: boolean;
     /** Display the current width/height as a small label. Default: false. */
@@ -123,4 +134,4 @@ interface ResizeModuleHandle {
 }
 declare function QuillResizeModule(quill: Quill, options?: QuillResizeModuleOptions): ResizeModuleHandle;
 export default QuillResizeModule;
-export type { QuillResizeModuleOptions, ToolbarOptions, ResizeModuleHandle, ResizeChangeEvent, ResizeConstraints, };
+export type { QuillResizeModuleOptions, ToolbarOptions, ResizeModuleHandle, ResizeChangeEvent, ResizeConstraints, ResizeMediaAttributes, };

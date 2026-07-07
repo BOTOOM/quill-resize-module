@@ -184,6 +184,48 @@ describe("Quill-native persistence", () => {
     expect(img2.style.float).toBe("left");
   });
 
+  it("persists alt/title set through the attributes panel and restores them on a fresh instance", () => {
+    const { quill } = createQuill();
+    quill.setContents([
+      { insert: { image: "https://example.com/a.png" } },
+    ] as unknown as Parameters<Quill["setContents"]>[0]);
+
+    const img = quill.root.querySelector("img") as HTMLImageElement;
+    img.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    const resizer = quill.root.parentElement?.querySelector(
+      "#editor-resizer"
+    ) as HTMLElement;
+
+    resizer
+      .querySelector('[data-type="attributes"]')
+      ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    const altInput = resizer.querySelector(
+      'input[data-attr="alt"]'
+    ) as HTMLInputElement;
+    const titleInput = resizer.querySelector(
+      'input[data-attr="title"]'
+    ) as HTMLInputElement;
+    altInput.value = "A sunset";
+    titleInput.value = "Sunset over the hills";
+    resizer
+      .querySelector('[data-action="save-attributes"]')
+      ?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    const op = getImageOp(quill.getContents());
+    expect(op?.attributes?.alt).toBe("A sunset");
+    expect(op?.attributes?.title).toBe("Sunset over the hills");
+
+    const persistedDelta = quill.getContents();
+    const container2 = document.createElement("div");
+    document.body.appendChild(container2);
+    const quill2 = new Quill(container2);
+    quill2.setContents(persistedDelta);
+
+    const img2 = quill2.root.querySelector("img") as HTMLImageElement;
+    expect(img2.getAttribute("alt")).toBe("A sunset");
+    expect(img2.getAttribute("title")).toBe("Sunset over the hills");
+  });
+
   it("does not affect Quill's own block-level align format for paragraphs", () => {
     const { quill } = createQuill();
     quill.setContents([{ insert: "hello\n" }] as unknown as Parameters<

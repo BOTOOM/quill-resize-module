@@ -21,6 +21,8 @@
 export const WIDTH_FORMAT = "width";
 export const HEIGHT_FORMAT = "height";
 export const ALIGN_FORMAT = "resizeAlign";
+export const ALT_FORMAT = "alt";
+export const TITLE_FORMAT = "title";
 export const VIDEO_FILE_BLOT_NAME = "videoFile";
 
 export type AlignValue = "left" | "center" | "right";
@@ -100,6 +102,40 @@ function createAlignAttributor(Parchment: any): ResizeAttributor {
   }) as unknown as ResizeAttributor;
 }
 
+/**
+ * Generic attributor for a plain HTML attribute (`alt`, `title`), used to
+ * persist media-attribute edits through the Delta model. Unlike
+ * `createStyleAttributor`, this reads/writes a real DOM attribute rather
+ * than an inline style property.
+ */
+function createAttributeAttributor(
+  Parchment: any,
+  attrName: string,
+  htmlAttr: string
+): ResizeAttributor {
+  class ResizeAttributeAttributor extends Parchment.Attributor {
+    constructor(name: string, key: string, options: any) {
+      super(name, key, options);
+    }
+    add(node: HTMLElement, value: unknown): boolean {
+      if (!this.canAdd(node, value)) {
+        return false;
+      }
+      node.setAttribute(htmlAttr, String(value));
+      return true;
+    }
+    remove(node: HTMLElement): void {
+      node.removeAttribute(htmlAttr);
+    }
+    value(node: HTMLElement): string | undefined {
+      return node.getAttribute(htmlAttr) ?? undefined;
+    }
+  }
+  return new ResizeAttributeAttributor(attrName, htmlAttr, {
+    scope: Parchment.Scope.ATTRIBUTE,
+  }) as unknown as ResizeAttributor;
+}
+
 function withResizeFormats(BaseBlot: any, attributors: ResizeAttributor[]) {
   return class ResizableBlot extends BaseBlot {
     static formats(domNode: HTMLElement): Record<string, unknown> {
@@ -175,6 +211,8 @@ export function registerResizeFormats(QuillCtor: any): void {
     createStyleAttributor(Parchment, WIDTH_FORMAT, "width"),
     createStyleAttributor(Parchment, HEIGHT_FORMAT, "height"),
     createAlignAttributor(Parchment),
+    createAttributeAttributor(Parchment, ALT_FORMAT, "alt"),
+    createAttributeAttributor(Parchment, TITLE_FORMAT, "title"),
   ];
 
   const BaseImage = QuillCtor.import("formats/image");
@@ -195,9 +233,12 @@ export function registerResizeFormats(QuillCtor: any): void {
 
 /**
  * Reads the given quill instance's Parchment blot for a resize target (if
- * any) and, when found, persists the current width/height/align inline
- * styles into the Quill Delta via `formatText`, so they survive
- * `getContents()` / `setContents()` round trips.
+ * any) and, when found, persists the current width/height/align/alt/title
+ * state into the Quill Delta via `formatText`, so they survive
+ * `getContents()` / `setContents()` round trips. `alt`/`title` are read
+ * from the DOM node's attributes and re-applied idempotently on every
+ * call (harmless no-op when unchanged), so a single sync path covers both
+ * resize/align gestures and media-attribute edits.
  *
  * No-ops when the module wasn't given a live Quill instance (e.g. when
  * `ResizePlugin` is used standalone, without Quill formats registered), or
@@ -224,6 +265,8 @@ export function syncResizeStateToQuill(
       [WIDTH_FORMAT]: target.style.width || "",
       [HEIGHT_FORMAT]: target.style.height || "",
       [ALIGN_FORMAT]: readAlignValue(target) || "",
+      [ALT_FORMAT]: target.getAttribute("alt") || "",
+      [TITLE_FORMAT]: target.getAttribute("title") || "",
     },
     "user"
   );

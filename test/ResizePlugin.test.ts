@@ -1011,4 +1011,218 @@ describe("ResizePlugin", () => {
       );
     });
   });
+
+  describe("media attributes panel", () => {
+    it("renders a hidden attributes panel and an attributes toolbar button by default", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container);
+
+      const panel = plugin.resizer?.querySelector(
+        ".attributes-panel"
+      ) as HTMLElement;
+      const trigger = plugin.resizer?.querySelector(
+        '[data-type="attributes"]'
+      ) as HTMLElement;
+      expect(panel.hidden).toBe(true);
+      expect(trigger).not.toBeNull();
+      expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    });
+
+    it("opens the panel and pre-fills alt/title for an img target", () => {
+      const container = createContainer();
+      const target = createTarget();
+      target.setAttribute("alt", "A cat");
+      target.setAttribute("title", "Cute cat");
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container);
+      const trigger = plugin.resizer?.querySelector(
+        '[data-type="attributes"]'
+      ) as HTMLElement;
+      trigger.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      const panel = plugin.resizer?.querySelector(
+        ".attributes-panel"
+      ) as HTMLElement;
+      const altField = panel.querySelector(
+        '[data-field="alt"]'
+      ) as HTMLElement;
+      const altInput = panel.querySelector(
+        'input[data-attr="alt"]'
+      ) as HTMLInputElement;
+      const titleInput = panel.querySelector(
+        'input[data-attr="title"]'
+      ) as HTMLInputElement;
+
+      expect(panel.hidden).toBe(false);
+      expect(trigger.getAttribute("aria-expanded")).toBe("true");
+      expect(altField.style.display).not.toBe("none");
+      expect(altInput.value).toBe("A cat");
+      expect(titleInput.value).toBe("Cute cat");
+    });
+
+    it("hides the alt field for non-img targets", () => {
+      const container = createContainer();
+      const target = document.createElement("video");
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container);
+      const trigger = plugin.resizer?.querySelector(
+        '[data-type="attributes"]'
+      ) as HTMLElement;
+      trigger.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      const panel = plugin.resizer?.querySelector(
+        ".attributes-panel"
+      ) as HTMLElement;
+      const altField = panel.querySelector(
+        '[data-field="alt"]'
+      ) as HTMLElement;
+      expect(altField.style.display).toBe("none");
+    });
+
+    it("saves alt/title, fires onAttributesChange and onChange, and closes the panel", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      const onAttributesChange = vi.fn();
+      const onChange = vi.fn();
+
+      const plugin = createPlugin(target, container, {
+        onAttributesChange,
+        onChange,
+      });
+      const trigger = plugin.resizer?.querySelector(
+        '[data-type="attributes"]'
+      ) as HTMLElement;
+      trigger.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      const panel = plugin.resizer?.querySelector(
+        ".attributes-panel"
+      ) as HTMLElement;
+      const altInput = panel.querySelector(
+        'input[data-attr="alt"]'
+      ) as HTMLInputElement;
+      const titleInput = panel.querySelector(
+        'input[data-attr="title"]'
+      ) as HTMLInputElement;
+      altInput.value = "New alt";
+      titleInput.value = "New title";
+
+      const saveBtn = panel.querySelector(
+        '[data-action="save-attributes"]'
+      ) as HTMLElement;
+      saveBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(target.getAttribute("alt")).toBe("New alt");
+      expect(target.getAttribute("title")).toBe("New title");
+      expect(onAttributesChange).toHaveBeenCalledWith(target, {
+        alt: "New alt",
+        title: "New title",
+      });
+      expect(onChange).toHaveBeenCalledWith(target);
+      expect(panel.hidden).toBe(true);
+    });
+
+    it("removes the alt/title attributes when saved as empty", () => {
+      const container = createContainer();
+      const target = createTarget();
+      target.setAttribute("alt", "old");
+      target.setAttribute("title", "old title");
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container);
+      const trigger = plugin.resizer?.querySelector(
+        '[data-type="attributes"]'
+      ) as HTMLElement;
+      trigger.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      const panel = plugin.resizer?.querySelector(
+        ".attributes-panel"
+      ) as HTMLElement;
+      (panel.querySelector('input[data-attr="alt"]') as HTMLInputElement).value =
+        "";
+      (
+        panel.querySelector('input[data-attr="title"]') as HTMLInputElement
+      ).value = "";
+      (
+        panel.querySelector(
+          '[data-action="save-attributes"]'
+        ) as HTMLElement
+      ).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(target.hasAttribute("alt")).toBe(false);
+      expect(target.hasAttribute("title")).toBe(false);
+    });
+
+    it("cancels without applying changes", () => {
+      const container = createContainer();
+      const target = createTarget();
+      target.setAttribute("alt", "kept");
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container);
+      const trigger = plugin.resizer?.querySelector(
+        '[data-type="attributes"]'
+      ) as HTMLElement;
+      trigger.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      const panel = plugin.resizer?.querySelector(
+        ".attributes-panel"
+      ) as HTMLElement;
+      (panel.querySelector('input[data-attr="alt"]') as HTMLInputElement).value =
+        "changed";
+      (
+        panel.querySelector(
+          '[data-action="cancel-attributes"]'
+        ) as HTMLElement
+      ).dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      expect(target.getAttribute("alt")).toBe("kept");
+      expect(panel.hidden).toBe(true);
+    });
+
+    it("closes only the panel (not the whole overlay) on Escape inside it", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container);
+      const trigger = plugin.resizer?.querySelector(
+        '[data-type="attributes"]'
+      ) as HTMLElement;
+      trigger.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+      const panel = plugin.resizer?.querySelector(
+        ".attributes-panel"
+      ) as HTMLElement;
+      const altInput = panel.querySelector(
+        'input[data-attr="alt"]'
+      ) as HTMLInputElement;
+      altInput.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+      );
+
+      expect(panel.hidden).toBe(true);
+      expect(container.querySelector("#editor-resizer")).not.toBeNull();
+    });
+
+    it("hides the attributes toolbar group when toolbar.attributesTool is false", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container, {
+        toolbar: { attributesTool: false },
+      });
+
+      const attributesGroup = plugin.resizer?.querySelector(
+        '[data-group="attributes"]'
+      ) as HTMLElement;
+      expect(attributesGroup.style.display).toBe("none");
+    });
+  });
 });

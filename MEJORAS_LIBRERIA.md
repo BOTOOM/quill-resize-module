@@ -345,6 +345,26 @@ Impacto:
 
 - Es una mejora muy visible y de alto valor para usuarios finales.
 
+**✅ Implementado**: se agrego un boton "editar atributos" en la toolbar
+(`toolbar.attributesTool`, por defecto `true`) que abre un panel con
+campos `alt` (solo visible para `<img>`, ya que el resto de embeds no
+tiene semantica nativa de alt) y `title` (disponible para cualquier
+target). Al guardar, ambos valores se aplican como atributos HTML reales
+y se persisten en el Delta de Quill mediante dos nuevos attributors
+(`alt`/`title`, registrados con scope `ATTRIBUTE` en `src/formats.ts`),
+sobreviviendo a `getContents()`/`setContents()` igual que
+`width`/`height`/`resizeAlign`. Se agrego el callback
+`onAttributesChange` (tipado con la nueva interfaz
+`ResizeMediaAttributes`) y `Escape` dentro del panel lo cierra sin cerrar
+el overlay completo. No se implemento un "caption" visible como texto
+(figure/figcaption) en esta iteracion — se prioriza `title` como
+alternativa mas simple y no invasiva, documentada en el README. Cubierto
+por 8 tests nuevos en `describe("media attributes panel")`
+(`test/ResizePlugin.test.ts`) y un test de persistencia end-to-end en
+`test/persistence.test.ts` (guarda alt/title, verifica el Delta, y los
+restaura en una instancia nueva de Quill). Documentado en la nueva
+seccion "✏️ Media Attributes (Alt Text & Title)" del README.
+
 ### 8. Limites y modos de resize
 
 Objetivo:

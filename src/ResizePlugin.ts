@@ -30,6 +30,17 @@ interface ResizeChangeEvent {
   align: AlignValue | null;
 }
 
+/**
+ * Media attributes editable through the toolbar's attributes panel.
+ * `alt` only makes sense for `<img>` targets (native accessibility text);
+ * `title` applies to any target and is exposed as a plain HTML `title`
+ * attribute (tooltip).
+ */
+interface ResizeMediaAttributes {
+  alt?: string;
+  title?: string;
+}
+
 interface ToolbarOptions {
   /** Show/hide the width/size buttons in the toolbar. Default: true. */
   sizeTools?: boolean;
@@ -40,6 +51,11 @@ interface ToolbarOptions {
    * with the previous (misspelled) option name.
    */
   alingTools?: boolean;
+  /**
+   * Show/hide the "edit attributes" button that opens a small panel for
+   * editing `alt` text (images only) and `title`. Default: true.
+   */
+  attributesTool?: boolean;
   /**
    * Percentages rendered as quick-size preset buttons. Default: `[100, 50]`
    * (matching the library's previous hardcoded 100%/50% buttons).
@@ -99,6 +115,15 @@ interface ResizePluginOption {
   onResizeEnd?: (element: HTMLElement) => void;
   /** Fired specifically when the alignment (left/center/right/none) changes. */
   onAlignChange?: (element: HTMLElement, align: AlignValue | null) => void;
+  /**
+   * Fired when `alt`/`title` are saved through the attributes panel.
+   * Receives only the fields that were actually present in the panel
+   * (`alt` is omitted for non-`img` targets).
+   */
+  onAttributesChange?: (
+    element: HTMLElement,
+    attrs: ResizeMediaAttributes
+  ) => void;
   /** Show/hide the whole floating toolbar. Default: true. */
   showToolbar?: boolean;
   /** Display the current width/height as a small label. Default: false. */
@@ -136,6 +161,17 @@ const template = `
     <button type="button" class="btn" data-type="align" data-styles="display:block;margin:auto;">{2}</button>
     <button type="button" class="btn" data-type="align" data-styles="float:right;">{3}</button>
     <button type="button" class="btn" data-type="align" data-styles="">{4}</button>
+  </div>
+  <div class="group" data-group="attributes">
+    <button type="button" class="btn" data-type="attributes" aria-haspopup="true" aria-expanded="false" title="{8}">{8}</button>
+  </div>
+</div>
+<div class="attributes-panel" role="dialog" aria-label="{9}" hidden>
+  <label class="field" data-field="alt">{10}<input type="text" data-attr="alt" /></label>
+  <label class="field" data-field="title">{11}<input type="text" data-attr="title" /></label>
+  <div class="actions">
+    <button type="button" class="btn" data-action="save-attributes">{12}</button>
+    <button type="button" class="btn" data-action="cancel-attributes">{13}</button>
   </div>
 </div>
 `;
@@ -256,7 +292,13 @@ class ResizePlugin {
         this.i18n.findLabel("restore"),
         this.i18n.findLabel("inputTip"),
         this.i18n.findLabel("handlerLabel"),
-        this.i18n.findLabel("toolbarLabel")
+        this.i18n.findLabel("toolbarLabel"),
+        this.i18n.findLabel("editAttributesLabel"),
+        this.i18n.findLabel("attributesPanelLabel"),
+        this.i18n.findLabel("altTextLabel"),
+        this.i18n.findLabel("titleTextLabel"),
+        this.i18n.findLabel("saveLabel"),
+        this.i18n.findLabel("cancelLabel")
       );
       this.container.appendChild(resizer);
     }
@@ -297,6 +339,14 @@ class ResizePlugin {
     ) as HTMLElement;
     if (alignGroup) {
       alignGroup.style.display = showAlignTools ? "" : "none";
+    }
+
+    const showAttributesTool = toolbarOptions.attributesTool !== false;
+    const attributesGroup = this.resizer.querySelector(
+      '[data-group="attributes"]'
+    ) as HTMLElement;
+    if (attributesGroup) {
+      attributesGroup.style.display = showAttributesTool ? "" : "none";
     }
 
     const sizeLabel = this.resizer.querySelector(
@@ -452,6 +502,16 @@ class ResizePlugin {
    */
   onKeyDown(e: KeyboardEvent) {
     const target = e.target as HTMLElement;
+
+    // Escape inside the attributes panel closes just the panel, not the
+    // whole overlay (mirrors closing a modal/popover without discarding
+    // the active resize target).
+    if (e.key === "Escape" && target.closest(".attributes-panel")) {
+      e.preventDefault();
+      this._toggleAttributesPanel(false);
+      return;
+    }
+
     if (!target.classList.contains("handler")) {
       return;
     }
@@ -588,6 +648,20 @@ class ResizePlugin {
   toolbarClick(e: MouseEvent) {
     const target: HTMLElement = e.target as HTMLElement;
     const type = target?.dataset?.type;
+    const action = target?.dataset?.action;
+
+    if (type === "attributes") {
+      this._toggleAttributesPanel();
+      return;
+    }
+    if (action === "save-attributes") {
+      this._saveAttributes();
+      return;
+    }
+    if (action === "cancel-attributes") {
+      this._toggleAttributesPanel(false);
+      return;
+    }
 
     if (type && target.classList.contains("btn")) {
       const percentAttr = target.dataset?.percent;
@@ -600,6 +674,95 @@ class ResizePlugin {
         this._setStylesForToolbar(type, target?.dataset?.styles);
       }
     }
+  }
+  /**
+   * Shows or hides the alt/title attributes panel. When opening (no
+   * explicit `show` argument, or `show === true`), populates the inputs
+   * with the target's current `alt`/`title` attributes and hides the alt
+   * field for non-`img` targets (alt text only applies to images).
+   */
+  _toggleAttributesPanel(show?: boolean): void {
+    const panel = this.resizer?.querySelector(
+      ".attributes-panel"
+    ) as HTMLElement | null;
+    const trigger = this.resizer?.querySelector(
+      '[data-type="attributes"]'
+    ) as HTMLElement | null;
+    if (!panel || !trigger) {
+      return;
+    }
+    const shouldShow = show ?? panel.hidden;
+    if (shouldShow) {
+      const isImage = this.resizeTarget.tagName.toLowerCase() === "img";
+      const altField = panel.querySelector(
+        '[data-field="alt"]'
+      ) as HTMLElement | null;
+      if (altField) {
+        altField.style.display = isImage ? "" : "none";
+      }
+      const altInput = panel.querySelector(
+        'input[data-attr="alt"]'
+      ) as HTMLInputElement | null;
+      if (altInput) {
+        altInput.value = this.resizeTarget.getAttribute("alt") || "";
+      }
+      const titleInput = panel.querySelector(
+        'input[data-attr="title"]'
+      ) as HTMLInputElement | null;
+      if (titleInput) {
+        titleInput.value = this.resizeTarget.getAttribute("title") || "";
+      }
+      panel.hidden = false;
+      trigger.setAttribute("aria-expanded", "true");
+    } else {
+      panel.hidden = true;
+      trigger.setAttribute("aria-expanded", "false");
+    }
+  }
+  /**
+   * Applies the alt/title values currently entered in the attributes
+   * panel to the resize target, persists them through Quill (if
+   * available), fires onAttributesChange/onChange, and closes the panel.
+   */
+  _saveAttributes(): void {
+    const panel = this.resizer?.querySelector(
+      ".attributes-panel"
+    ) as HTMLElement | null;
+    if (!panel) {
+      return;
+    }
+    const isImage = this.resizeTarget.tagName.toLowerCase() === "img";
+    const attrs: ResizeMediaAttributes = {};
+
+    if (isImage) {
+      const altInput = panel.querySelector(
+        'input[data-attr="alt"]'
+      ) as HTMLInputElement | null;
+      const alt = altInput?.value ?? "";
+      if (alt) {
+        this.resizeTarget.setAttribute("alt", alt);
+      } else {
+        this.resizeTarget.removeAttribute("alt");
+      }
+      attrs.alt = alt;
+    }
+
+    const titleInput = panel.querySelector(
+      'input[data-attr="title"]'
+    ) as HTMLInputElement | null;
+    const title = titleInput?.value ?? "";
+    if (title) {
+      this.resizeTarget.setAttribute("title", title);
+    } else {
+      this.resizeTarget.removeAttribute("title");
+    }
+    attrs.title = title;
+
+    this._syncPersistence();
+    this._toggleAttributesPanel(false);
+
+    this.options?.onAttributesChange?.(this.resizeTarget, attrs);
+    this.options?.onChange?.(this.resizeTarget);
   }
   startResize(e: PointerEvent) {
     const target: HTMLElement = e.target as HTMLElement;
@@ -692,4 +855,4 @@ class ResizePlugin {
 }
 
 export default ResizePlugin;
-export type { ResizeChangeEvent, ResizeConstraints };
+export type { ResizeChangeEvent, ResizeConstraints, ResizeMediaAttributes };

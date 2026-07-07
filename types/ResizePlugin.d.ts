@@ -26,6 +26,16 @@ interface ResizeChangeEvent {
     height: number;
     align: AlignValue | null;
 }
+/**
+ * Media attributes editable through the toolbar's attributes panel.
+ * `alt` only makes sense for `<img>` targets (native accessibility text);
+ * `title` applies to any target and is exposed as a plain HTML `title`
+ * attribute (tooltip).
+ */
+interface ResizeMediaAttributes {
+    alt?: string;
+    title?: string;
+}
 interface ToolbarOptions {
     /** Show/hide the width/size buttons in the toolbar. Default: true. */
     sizeTools?: boolean;
@@ -36,6 +46,11 @@ interface ToolbarOptions {
      * with the previous (misspelled) option name.
      */
     alingTools?: boolean;
+    /**
+     * Show/hide the "edit attributes" button that opens a small panel for
+     * editing `alt` text (images only) and `title`. Default: true.
+     */
+    attributesTool?: boolean;
     /**
      * Percentages rendered as quick-size preset buttons. Default: `[100, 50]`
      * (matching the library's previous hardcoded 100%/50% buttons).
@@ -93,6 +108,12 @@ interface ResizePluginOption {
     onResizeEnd?: (element: HTMLElement) => void;
     /** Fired specifically when the alignment (left/center/right/none) changes. */
     onAlignChange?: (element: HTMLElement, align: AlignValue | null) => void;
+    /**
+     * Fired when `alt`/`title` are saved through the attributes panel.
+     * Receives only the fields that were actually present in the panel
+     * (`alt` is omitted for non-`img` targets).
+     */
+    onAttributesChange?: (element: HTMLElement, attrs: ResizeMediaAttributes) => void;
     /** Show/hide the whole floating toolbar. Default: true. */
     showToolbar?: boolean;
     /** Display the current width/height as a small label. Default: false. */
@@ -194,6 +215,19 @@ declare class ResizePlugin {
     _computeWidthStyles(percent: number): string;
     toolbarInputChange(e: Event): void;
     toolbarClick(e: MouseEvent): void;
+    /**
+     * Shows or hides the alt/title attributes panel. When opening (no
+     * explicit `show` argument, or `show === true`), populates the inputs
+     * with the target's current `alt`/`title` attributes and hides the alt
+     * field for non-`img` targets (alt text only applies to images).
+     */
+    _toggleAttributesPanel(show?: boolean): void;
+    /**
+     * Applies the alt/title values currently entered in the attributes
+     * panel to the resize target, persists them through Quill (if
+     * available), fires onAttributesChange/onChange, and closes the panel.
+     */
+    _saveAttributes(): void;
     startResize(e: PointerEvent): void;
     endResize(e?: PointerEvent): void;
     resizing(e: PointerEvent): void;
@@ -206,4 +240,4 @@ declare class ResizePlugin {
     destory(): void;
 }
 export default ResizePlugin;
-export type { ResizeChangeEvent, ResizeConstraints };
+export type { ResizeChangeEvent, ResizeConstraints, ResizeMediaAttributes };

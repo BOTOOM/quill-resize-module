@@ -78,7 +78,7 @@
       }
     }
 
-    var css_248z = "#editor-resizer {\n  position: absolute;\n  border: 1px dashed #fff;\n  background-color: rgba(0, 0, 0, 0.5);\n  /* .handler and .btn are real <button> elements (for native keyboard\n     activation/focusability), which come with browser default chrome\n     (padding, border, background, font). Reset that here; the more\n     specific .handler/.btn rules below win the cascade and re-apply the\n     actual look, so this is purely an appearance reset, not a behavior\n     change. `all: unset` also clears the default focus outline, so it is\n     restored explicitly via :focus-visible. */\n}\n#editor-resizer button {\n  all: unset;\n  box-sizing: border-box;\n  cursor: pointer;\n}\n#editor-resizer button:focus-visible {\n  outline: 2px solid #4f9eff;\n  outline-offset: 2px;\n}\n#editor-resizer .handler {\n  position: absolute;\n  right: -5px;\n  bottom: -5px;\n  width: 10px;\n  height: 10px;\n  border: 1px solid #333;\n  background-color: rgba(255, 255, 255, 0.8);\n  cursor: nwse-resize;\n  user-select: none;\n  /* Prevent the browser's native touch scrolling/panning gestures from\n       competing with a pointer-based resize drag on touch screens. */\n  touch-action: none;\n  /* The visible handle is intentionally small so it doesn't obscure the\n       media being resized, but a 10x10px target is far below the ~44px\n       minimum recommended for touch input. This invisible pseudo-element\n       enlarges the actual hit/pointer area without changing how the\n       handle looks; pointer/touch events anywhere within it still report\n       `.handler` as their target since pseudo-elements aren't\n       independently targetable. */\n}\n#editor-resizer .handler::before {\n  content: \"\";\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  width: 40px;\n  height: 40px;\n  transform: translate(-50%, -50%);\n}\n#editor-resizer .size-label {\n  position: absolute;\n  left: 50%;\n  bottom: -1.6em;\n  transform: translateX(-50%);\n  padding: 0.1em 0.5em;\n  border-radius: 3px;\n  background-color: rgba(0, 0, 0, 0.65);\n  color: #fff;\n  font-size: 0.75em;\n  white-space: nowrap;\n  user-select: none;\n  pointer-events: none;\n}\n#editor-resizer .toolbar {\n  position: absolute;\n  top: -3em;\n  left: 50%;\n  min-width: 200px;\n  /* Minimum width for small objects */\n  max-width: 400px;\n  /* Maximum width for very small objects */\n  padding: 0.5em;\n  border: 1px solid #fff;\n  border-radius: 3px;\n  background-color: #fff;\n  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);\n  transform: translateX(-50%);\n  z-index: 1000;\n  white-space: normal;\n  /* Allow text wrapping */\n  /* Responsive positioning for very small objects */\n}\n#editor-resizer .toolbar.small-object {\n  min-width: 250px;\n  top: -4em;\n}\n#editor-resizer .toolbar.very-small-object {\n  min-width: 300px;\n  top: -5em;\n  left: 0;\n  transform: none;\n}\n#editor-resizer .toolbar .group {\n  display: flex;\n  border: 1px solid #aaa;\n  border-radius: 6px;\n  overflow: hidden;\n  white-space: nowrap;\n  text-align: center;\n  flex-wrap: wrap;\n  /* Allow wrapping for very small objects */\n  /* Input wrapper improvements */\n}\n#editor-resizer .toolbar .group:not(:first-child) {\n  margin-top: 0.5em;\n}\n#editor-resizer .toolbar .group .btn {\n  flex: 1 0 auto;\n  /* Allow buttons to shrink */\n  min-width: 40px;\n  /* Minimum button width */\n  text-align: center;\n  padding: 0 0.3rem;\n  /* Reduced padding */\n  display: inline-block;\n  color: rgba(0, 0, 0, 0.65);\n  vertical-align: top;\n  line-height: 1.8;\n  /* Slightly reduced line height */\n  user-select: none;\n  font-size: 0.85em;\n  /* Smaller font for tight spaces */\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  /* Tooltip for truncated text */\n}\n#editor-resizer .toolbar .group .btn.btn-group {\n  padding: 0;\n  display: inline-flex;\n  line-height: 1.8em;\n  min-width: 60px;\n}\n#editor-resizer .toolbar .group .btn.btn-group .inner-btn {\n  flex: 1 0 0;\n  font-size: 1.5em;\n  /* Smaller icons */\n  width: 50%;\n  cursor: pointer;\n}\n#editor-resizer .toolbar .group .btn.btn-group .inner-btn:first-child {\n  border-right: 1px solid #ddd;\n}\n#editor-resizer .toolbar .group .btn.btn-group .inner-btn:active {\n  transform: scale(0.8);\n}\n#editor-resizer .toolbar .group .btn:not(:last-child) {\n  border-right: 1px solid #bbb;\n}\n#editor-resizer .toolbar .group .btn:not(.btn-group):active {\n  background-color: rgba(0, 0, 0, 0.1);\n}\n#editor-resizer .toolbar .group .btn:hover {\n  position: relative;\n}\n#editor-resizer .toolbar .group .btn:hover::after {\n  content: attr(data-full-text);\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  transform: translateX(-50%);\n  background-color: #333;\n  color: white;\n  padding: 4px 8px;\n  border-radius: 4px;\n  font-size: 12px;\n  white-space: nowrap;\n  z-index: 1001;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.3s;\n}\n#editor-resizer .toolbar .group .btn:hover:hover::after {\n  opacity: 1;\n}\n#editor-resizer .toolbar .group .input-wrapper {\n  position: relative;\n  display: inline-flex;\n  align-items: center;\n  min-width: 60px;\n  flex: 1 0 auto;\n}\n#editor-resizer .toolbar .group .input-wrapper input {\n  width: 40px;\n  text-align: center;\n  border: 1px solid #ddd;\n  border-radius: 2px;\n  padding: 2px 4px;\n  font-size: 0.85em;\n}\n#editor-resizer .toolbar .group .input-wrapper .suffix {\n  font-size: 0.75em;\n  margin-left: 2px;\n}\n#editor-resizer .toolbar .group .input-wrapper .tooltip {\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  transform: translateX(-50%);\n  background-color: #333;\n  color: white;\n  padding: 4px 8px;\n  border-radius: 4px;\n  font-size: 11px;\n  white-space: nowrap;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.3s;\n  z-index: 1001;\n}\n#editor-resizer .toolbar .group .input-wrapper:hover .tooltip {\n  opacity: 1;\n}\n#editor-resizer .last-item {\n  margin-right: 5px;\n}\n#editor-resizer .showSize {\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  padding: 0.1em;\n  border: 1px solid rgba(255, 255, 255, 0.8);\n  border-radius: 2px;\n  background-color: rgba(255, 255, 255, 0.8);\n  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);\n  transform: translateX(-50%);\n  font-size: 0.8em;\n  /* Smaller font for tight spaces */\n}\n";
+    var css_248z = "#editor-resizer {\n  position: absolute;\n  border: 1px dashed #fff;\n  background-color: rgba(0, 0, 0, 0.5);\n  /* .handler and .btn are real <button> elements (for native keyboard\n     activation/focusability), which come with browser default chrome\n     (padding, border, background, font). Reset that here; the more\n     specific .handler/.btn rules below win the cascade and re-apply the\n     actual look, so this is purely an appearance reset, not a behavior\n     change. `all: unset` also clears the default focus outline, so it is\n     restored explicitly via :focus-visible. */\n}\n#editor-resizer button {\n  all: unset;\n  box-sizing: border-box;\n  cursor: pointer;\n}\n#editor-resizer button:focus-visible {\n  outline: 2px solid #4f9eff;\n  outline-offset: 2px;\n}\n#editor-resizer .handler {\n  position: absolute;\n  right: -5px;\n  bottom: -5px;\n  width: 10px;\n  height: 10px;\n  border: 1px solid #333;\n  background-color: rgba(255, 255, 255, 0.8);\n  cursor: nwse-resize;\n  user-select: none;\n  /* Prevent the browser's native touch scrolling/panning gestures from\n       competing with a pointer-based resize drag on touch screens. */\n  touch-action: none;\n  /* The visible handle is intentionally small so it doesn't obscure the\n       media being resized, but a 10x10px target is far below the ~44px\n       minimum recommended for touch input. This invisible pseudo-element\n       enlarges the actual hit/pointer area without changing how the\n       handle looks; pointer/touch events anywhere within it still report\n       `.handler` as their target since pseudo-elements aren't\n       independently targetable. */\n}\n#editor-resizer .handler::before {\n  content: \"\";\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  width: 40px;\n  height: 40px;\n  transform: translate(-50%, -50%);\n}\n#editor-resizer .size-label {\n  position: absolute;\n  left: 50%;\n  bottom: -1.6em;\n  transform: translateX(-50%);\n  padding: 0.1em 0.5em;\n  border-radius: 3px;\n  background-color: rgba(0, 0, 0, 0.65);\n  color: #fff;\n  font-size: 0.75em;\n  white-space: nowrap;\n  user-select: none;\n  pointer-events: none;\n}\n#editor-resizer .toolbar {\n  position: absolute;\n  top: -3em;\n  left: 50%;\n  min-width: 200px;\n  /* Minimum width for small objects */\n  max-width: 400px;\n  /* Maximum width for very small objects */\n  padding: 0.5em;\n  border: 1px solid #fff;\n  border-radius: 3px;\n  background-color: #fff;\n  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);\n  transform: translateX(-50%);\n  z-index: 1000;\n  white-space: normal;\n  /* Allow text wrapping */\n  /* Responsive positioning for very small objects */\n}\n#editor-resizer .toolbar.small-object {\n  min-width: 250px;\n  top: -4em;\n}\n#editor-resizer .toolbar.very-small-object {\n  min-width: 300px;\n  top: -5em;\n  left: 0;\n  transform: none;\n}\n#editor-resizer .toolbar .group {\n  display: flex;\n  border: 1px solid #aaa;\n  border-radius: 6px;\n  overflow: hidden;\n  white-space: nowrap;\n  text-align: center;\n  flex-wrap: wrap;\n  /* Allow wrapping for very small objects */\n  /* Input wrapper improvements */\n}\n#editor-resizer .toolbar .group:not(:first-child) {\n  margin-top: 0.5em;\n}\n#editor-resizer .toolbar .group .btn {\n  flex: 1 0 auto;\n  /* Allow buttons to shrink */\n  min-width: 40px;\n  /* Minimum button width */\n  text-align: center;\n  padding: 0 0.3rem;\n  /* Reduced padding */\n  display: inline-block;\n  color: rgba(0, 0, 0, 0.65);\n  vertical-align: top;\n  line-height: 1.8;\n  /* Slightly reduced line height */\n  user-select: none;\n  font-size: 0.85em;\n  /* Smaller font for tight spaces */\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  /* Tooltip for truncated text */\n}\n#editor-resizer .toolbar .group .btn.btn-group {\n  padding: 0;\n  display: inline-flex;\n  line-height: 1.8em;\n  min-width: 60px;\n}\n#editor-resizer .toolbar .group .btn.btn-group .inner-btn {\n  flex: 1 0 0;\n  font-size: 1.5em;\n  /* Smaller icons */\n  width: 50%;\n  cursor: pointer;\n}\n#editor-resizer .toolbar .group .btn.btn-group .inner-btn:first-child {\n  border-right: 1px solid #ddd;\n}\n#editor-resizer .toolbar .group .btn.btn-group .inner-btn:active {\n  transform: scale(0.8);\n}\n#editor-resizer .toolbar .group .btn:not(:last-child) {\n  border-right: 1px solid #bbb;\n}\n#editor-resizer .toolbar .group .btn:not(.btn-group):active {\n  background-color: rgba(0, 0, 0, 0.1);\n}\n#editor-resizer .toolbar .group .btn:hover {\n  position: relative;\n}\n#editor-resizer .toolbar .group .btn:hover::after {\n  content: attr(data-full-text);\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  transform: translateX(-50%);\n  background-color: #333;\n  color: white;\n  padding: 4px 8px;\n  border-radius: 4px;\n  font-size: 12px;\n  white-space: nowrap;\n  z-index: 1001;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.3s;\n}\n#editor-resizer .toolbar .group .btn:hover:hover::after {\n  opacity: 1;\n}\n#editor-resizer .toolbar .group .input-wrapper {\n  position: relative;\n  display: inline-flex;\n  align-items: center;\n  min-width: 60px;\n  flex: 1 0 auto;\n}\n#editor-resizer .toolbar .group .input-wrapper input {\n  width: 40px;\n  text-align: center;\n  border: 1px solid #ddd;\n  border-radius: 2px;\n  padding: 2px 4px;\n  font-size: 0.85em;\n}\n#editor-resizer .toolbar .group .input-wrapper .suffix {\n  font-size: 0.75em;\n  margin-left: 2px;\n}\n#editor-resizer .toolbar .group .input-wrapper .tooltip {\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  transform: translateX(-50%);\n  background-color: #333;\n  color: white;\n  padding: 4px 8px;\n  border-radius: 4px;\n  font-size: 11px;\n  white-space: nowrap;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.3s;\n  z-index: 1001;\n}\n#editor-resizer .toolbar .group .input-wrapper:hover .tooltip {\n  opacity: 1;\n}\n#editor-resizer .last-item {\n  margin-right: 5px;\n}\n#editor-resizer .showSize {\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  padding: 0.1em;\n  border: 1px solid rgba(255, 255, 255, 0.8);\n  border-radius: 2px;\n  background-color: rgba(255, 255, 255, 0.8);\n  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);\n  transform: translateX(-50%);\n  font-size: 0.8em;\n  /* Smaller font for tight spaces */\n}\n#editor-resizer .attributes-panel {\n  position: absolute;\n  top: -3em;\n  left: 50%;\n  transform: translateX(-50%);\n  min-width: 220px;\n  padding: 0.6em;\n  border: 1px solid #fff;\n  border-radius: 3px;\n  background-color: #fff;\n  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);\n  z-index: 1000;\n}\n#editor-resizer .attributes-panel .field {\n  display: block;\n  margin-bottom: 0.4em;\n  font-size: 0.8em;\n  color: rgba(0, 0, 0, 0.65);\n}\n#editor-resizer .attributes-panel .field input {\n  display: block;\n  width: 100%;\n  margin-top: 0.2em;\n  box-sizing: border-box;\n  border: 1px solid #ddd;\n  border-radius: 2px;\n  padding: 0.3em;\n  font-size: 1em;\n}\n#editor-resizer .attributes-panel .actions {\n  display: flex;\n  justify-content: flex-end;\n  gap: 0.4em;\n}\n#editor-resizer .attributes-panel .actions .btn {\n  padding: 0.2em 0.6em;\n  border: 1px solid #aaa;\n  border-radius: 3px;\n  font-size: 0.8em;\n  color: rgba(0, 0, 0, 0.65);\n}\n";
     styleInject(css_248z);
 
     var I18n = /** @class */ (function () {
@@ -102,6 +102,12 @@
         inputTip: "Enter width percentage",
         toolbarLabel: "Media resize toolbar",
         handlerLabel: "Resize handle. Use arrow keys to resize, hold Alt to keep the aspect ratio, press 0 to restore the original size, Escape to close.",
+        editAttributesLabel: "Edit alt text and title",
+        attributesPanelLabel: "Edit media attributes",
+        altTextLabel: "Alt text",
+        titleTextLabel: "Title",
+        saveLabel: "Save",
+        cancelLabel: "Cancel",
     };
 
     function format(str) {
@@ -167,6 +173,8 @@
     var WIDTH_FORMAT = "width";
     var HEIGHT_FORMAT = "height";
     var ALIGN_FORMAT = "resizeAlign";
+    var ALT_FORMAT = "alt";
+    var TITLE_FORMAT = "title";
     var VIDEO_FILE_BLOT_NAME = "videoFile";
     var ALIGN_VALUES = ["left", "center", "right"];
     function readAlignValue(node) {
@@ -229,6 +237,38 @@
         return new ResizeAlignAttributor(ALIGN_FORMAT, "align", {
             scope: Parchment.Scope.INLINE,
             whitelist: ALIGN_VALUES,
+        });
+    }
+    /**
+     * Generic attributor for a plain HTML attribute (`alt`, `title`), used to
+     * persist media-attribute edits through the Delta model. Unlike
+     * `createStyleAttributor`, this reads/writes a real DOM attribute rather
+     * than an inline style property.
+     */
+    function createAttributeAttributor(Parchment, attrName, htmlAttr) {
+        var ResizeAttributeAttributor = /** @class */ (function (_super) {
+            __extends(ResizeAttributeAttributor, _super);
+            function ResizeAttributeAttributor(name, key, options) {
+                return _super.call(this, name, key, options) || this;
+            }
+            ResizeAttributeAttributor.prototype.add = function (node, value) {
+                if (!this.canAdd(node, value)) {
+                    return false;
+                }
+                node.setAttribute(htmlAttr, String(value));
+                return true;
+            };
+            ResizeAttributeAttributor.prototype.remove = function (node) {
+                node.removeAttribute(htmlAttr);
+            };
+            ResizeAttributeAttributor.prototype.value = function (node) {
+                var _a;
+                return (_a = node.getAttribute(htmlAttr)) !== null && _a !== void 0 ? _a : undefined;
+            };
+            return ResizeAttributeAttributor;
+        }(Parchment.Attributor));
+        return new ResizeAttributeAttributor(attrName, htmlAttr, {
+            scope: Parchment.Scope.ATTRIBUTE,
         });
     }
     function withResizeFormats(BaseBlot, attributors) {
@@ -308,6 +348,8 @@
             createStyleAttributor(Parchment, WIDTH_FORMAT, "width"),
             createStyleAttributor(Parchment, HEIGHT_FORMAT, "height"),
             createAlignAttributor(Parchment),
+            createAttributeAttributor(Parchment, ALT_FORMAT, "alt"),
+            createAttributeAttributor(Parchment, TITLE_FORMAT, "title"),
         ];
         var BaseImage = QuillCtor.import("formats/image");
         var BaseVideo = QuillCtor.import("formats/video");
@@ -323,9 +365,12 @@
     }
     /**
      * Reads the given quill instance's Parchment blot for a resize target (if
-     * any) and, when found, persists the current width/height/align inline
-     * styles into the Quill Delta via `formatText`, so they survive
-     * `getContents()` / `setContents()` round trips.
+     * any) and, when found, persists the current width/height/align/alt/title
+     * state into the Quill Delta via `formatText`, so they survive
+     * `getContents()` / `setContents()` round trips. `alt`/`title` are read
+     * from the DOM node's attributes and re-applied idempotently on every
+     * call (harmless no-op when unchanged), so a single sync path covers both
+     * resize/align gestures and media-attribute edits.
      *
      * No-ops when the module wasn't given a live Quill instance (e.g. when
      * `ResizePlugin` is used standalone, without Quill formats registered), or
@@ -346,6 +391,8 @@
             _a[WIDTH_FORMAT] = target.style.width || "",
             _a[HEIGHT_FORMAT] = target.style.height || "",
             _a[ALIGN_FORMAT] = readAlignValue(target) || "",
+            _a[ALT_FORMAT] = target.getAttribute("alt") || "",
+            _a[TITLE_FORMAT] = target.getAttribute("title") || "",
             _a), "user");
     }
 
@@ -358,7 +405,7 @@
         }
         return ResizeElement;
     })(HTMLElement));
-    var template = "\n<button type=\"button\" class=\"handler\" title=\"{0}\" aria-label=\"{6}\"></button>\n<span class=\"size-label\" aria-hidden=\"true\"></span>\n<div class=\"toolbar\" role=\"toolbar\" aria-label=\"{7}\">\n  <div class=\"group\" data-group=\"size\">\n    <span class=\"input-wrapper\"><input type=\"text\" data-type=\"width\" maxlength=\"3\" aria-label=\"{5}\" /><span class=\"suffix\">%</span><span class=\"tooltip\">{5}</span></span>\n    <button type=\"button\" class=\"btn\" data-type=\"width\" data-styles=\"width:auto; height:auto;\">{4}</button>\n  </div>\n  <div class=\"group\" data-group=\"align\">\n    <button type=\"button\" class=\"btn\" data-type=\"align\" data-styles=\"float:left\">{1}</button>\n    <button type=\"button\" class=\"btn\" data-type=\"align\" data-styles=\"display:block;margin:auto;\">{2}</button>\n    <button type=\"button\" class=\"btn\" data-type=\"align\" data-styles=\"float:right;\">{3}</button>\n    <button type=\"button\" class=\"btn\" data-type=\"align\" data-styles=\"\">{4}</button>\n  </div>\n</div>\n";
+    var template = "\n<button type=\"button\" class=\"handler\" title=\"{0}\" aria-label=\"{6}\"></button>\n<span class=\"size-label\" aria-hidden=\"true\"></span>\n<div class=\"toolbar\" role=\"toolbar\" aria-label=\"{7}\">\n  <div class=\"group\" data-group=\"size\">\n    <span class=\"input-wrapper\"><input type=\"text\" data-type=\"width\" maxlength=\"3\" aria-label=\"{5}\" /><span class=\"suffix\">%</span><span class=\"tooltip\">{5}</span></span>\n    <button type=\"button\" class=\"btn\" data-type=\"width\" data-styles=\"width:auto; height:auto;\">{4}</button>\n  </div>\n  <div class=\"group\" data-group=\"align\">\n    <button type=\"button\" class=\"btn\" data-type=\"align\" data-styles=\"float:left\">{1}</button>\n    <button type=\"button\" class=\"btn\" data-type=\"align\" data-styles=\"display:block;margin:auto;\">{2}</button>\n    <button type=\"button\" class=\"btn\" data-type=\"align\" data-styles=\"float:right;\">{3}</button>\n    <button type=\"button\" class=\"btn\" data-type=\"align\" data-styles=\"\">{4}</button>\n  </div>\n  <div class=\"group\" data-group=\"attributes\">\n    <button type=\"button\" class=\"btn\" data-type=\"attributes\" aria-haspopup=\"true\" aria-expanded=\"false\" title=\"{8}\">{8}</button>\n  </div>\n</div>\n<div class=\"attributes-panel\" role=\"dialog\" aria-label=\"{9}\" hidden>\n  <label class=\"field\" data-field=\"alt\">{10}<input type=\"text\" data-attr=\"alt\" /></label>\n  <label class=\"field\" data-field=\"title\">{11}<input type=\"text\" data-attr=\"title\" /></label>\n  <div class=\"actions\">\n    <button type=\"button\" class=\"btn\" data-action=\"save-attributes\">{12}</button>\n    <button type=\"button\" class=\"btn\" data-action=\"cancel-attributes\">{13}</button>\n  </div>\n</div>\n";
     var ResizePlugin = /** @class */ (function () {
         function ResizePlugin(resizeTarget, container, options) {
             var _this = this;
@@ -438,7 +485,7 @@
             if (!resizer) {
                 resizer = document.createElement("div");
                 resizer.setAttribute("id", "editor-resizer");
-                resizer.innerHTML = format(template, this.i18n.findLabel("altTip"), this.i18n.findLabel("floatLeft"), this.i18n.findLabel("center"), this.i18n.findLabel("floatRight"), this.i18n.findLabel("restore"), this.i18n.findLabel("inputTip"), this.i18n.findLabel("handlerLabel"), this.i18n.findLabel("toolbarLabel"));
+                resizer.innerHTML = format(template, this.i18n.findLabel("altTip"), this.i18n.findLabel("floatLeft"), this.i18n.findLabel("center"), this.i18n.findLabel("floatRight"), this.i18n.findLabel("restore"), this.i18n.findLabel("inputTip"), this.i18n.findLabel("handlerLabel"), this.i18n.findLabel("toolbarLabel"), this.i18n.findLabel("editAttributesLabel"), this.i18n.findLabel("attributesPanelLabel"), this.i18n.findLabel("altTextLabel"), this.i18n.findLabel("titleTextLabel"), this.i18n.findLabel("saveLabel"), this.i18n.findLabel("cancelLabel"));
                 this.container.appendChild(resizer);
             }
             this.resizer = resizer;
@@ -473,6 +520,11 @@
             var alignGroup = this.resizer.querySelector('[data-group="align"]');
             if (alignGroup) {
                 alignGroup.style.display = showAlignTools ? "" : "none";
+            }
+            var showAttributesTool = toolbarOptions.attributesTool !== false;
+            var attributesGroup = this.resizer.querySelector('[data-group="attributes"]');
+            if (attributesGroup) {
+                attributesGroup.style.display = showAttributesTool ? "" : "none";
             }
             var sizeLabel = this.resizer.querySelector(".size-label");
             if (sizeLabel) {
@@ -602,6 +654,14 @@
         ResizePlugin.prototype.onKeyDown = function (e) {
             var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
             var target = e.target;
+            // Escape inside the attributes panel closes just the panel, not the
+            // whole overlay (mirrors closing a modal/popover without discarding
+            // the active resize target).
+            if (e.key === "Escape" && target.closest(".attributes-panel")) {
+                e.preventDefault();
+                this._toggleAttributesPanel(false);
+                return;
+            }
             if (!target.classList.contains("handler")) {
                 return;
             }
@@ -723,18 +783,105 @@
             }
         };
         ResizePlugin.prototype.toolbarClick = function (e) {
-            var _a, _b, _c;
+            var _a, _b, _c, _d;
             var target = e.target;
             var type = (_a = target === null || target === void 0 ? void 0 : target.dataset) === null || _a === void 0 ? void 0 : _a.type;
+            var action = (_b = target === null || target === void 0 ? void 0 : target.dataset) === null || _b === void 0 ? void 0 : _b.action;
+            if (type === "attributes") {
+                this._toggleAttributesPanel();
+                return;
+            }
+            if (action === "save-attributes") {
+                this._saveAttributes();
+                return;
+            }
+            if (action === "cancel-attributes") {
+                this._toggleAttributesPanel(false);
+                return;
+            }
             if (type && target.classList.contains("btn")) {
-                var percentAttr = (_b = target.dataset) === null || _b === void 0 ? void 0 : _b.percent;
+                var percentAttr = (_c = target.dataset) === null || _c === void 0 ? void 0 : _c.percent;
                 if (type === "width" && percentAttr) {
                     this._setStylesForToolbar(type, this._computeWidthStyles(Number(percentAttr)));
                 }
                 else {
-                    this._setStylesForToolbar(type, (_c = target === null || target === void 0 ? void 0 : target.dataset) === null || _c === void 0 ? void 0 : _c.styles);
+                    this._setStylesForToolbar(type, (_d = target === null || target === void 0 ? void 0 : target.dataset) === null || _d === void 0 ? void 0 : _d.styles);
                 }
             }
+        };
+        /**
+         * Shows or hides the alt/title attributes panel. When opening (no
+         * explicit `show` argument, or `show === true`), populates the inputs
+         * with the target's current `alt`/`title` attributes and hides the alt
+         * field for non-`img` targets (alt text only applies to images).
+         */
+        ResizePlugin.prototype._toggleAttributesPanel = function (show) {
+            var _a, _b;
+            var panel = (_a = this.resizer) === null || _a === void 0 ? void 0 : _a.querySelector(".attributes-panel");
+            var trigger = (_b = this.resizer) === null || _b === void 0 ? void 0 : _b.querySelector('[data-type="attributes"]');
+            if (!panel || !trigger) {
+                return;
+            }
+            var shouldShow = show !== null && show !== void 0 ? show : panel.hidden;
+            if (shouldShow) {
+                var isImage = this.resizeTarget.tagName.toLowerCase() === "img";
+                var altField = panel.querySelector('[data-field="alt"]');
+                if (altField) {
+                    altField.style.display = isImage ? "" : "none";
+                }
+                var altInput = panel.querySelector('input[data-attr="alt"]');
+                if (altInput) {
+                    altInput.value = this.resizeTarget.getAttribute("alt") || "";
+                }
+                var titleInput = panel.querySelector('input[data-attr="title"]');
+                if (titleInput) {
+                    titleInput.value = this.resizeTarget.getAttribute("title") || "";
+                }
+                panel.hidden = false;
+                trigger.setAttribute("aria-expanded", "true");
+            }
+            else {
+                panel.hidden = true;
+                trigger.setAttribute("aria-expanded", "false");
+            }
+        };
+        /**
+         * Applies the alt/title values currently entered in the attributes
+         * panel to the resize target, persists them through Quill (if
+         * available), fires onAttributesChange/onChange, and closes the panel.
+         */
+        ResizePlugin.prototype._saveAttributes = function () {
+            var _a, _b, _c, _d, _e, _f, _g;
+            var panel = (_a = this.resizer) === null || _a === void 0 ? void 0 : _a.querySelector(".attributes-panel");
+            if (!panel) {
+                return;
+            }
+            var isImage = this.resizeTarget.tagName.toLowerCase() === "img";
+            var attrs = {};
+            if (isImage) {
+                var altInput = panel.querySelector('input[data-attr="alt"]');
+                var alt = (_b = altInput === null || altInput === void 0 ? void 0 : altInput.value) !== null && _b !== void 0 ? _b : "";
+                if (alt) {
+                    this.resizeTarget.setAttribute("alt", alt);
+                }
+                else {
+                    this.resizeTarget.removeAttribute("alt");
+                }
+                attrs.alt = alt;
+            }
+            var titleInput = panel.querySelector('input[data-attr="title"]');
+            var title = (_c = titleInput === null || titleInput === void 0 ? void 0 : titleInput.value) !== null && _c !== void 0 ? _c : "";
+            if (title) {
+                this.resizeTarget.setAttribute("title", title);
+            }
+            else {
+                this.resizeTarget.removeAttribute("title");
+            }
+            attrs.title = title;
+            this._syncPersistence();
+            this._toggleAttributesPanel(false);
+            (_e = (_d = this.options) === null || _d === void 0 ? void 0 : _d.onAttributesChange) === null || _e === void 0 ? void 0 : _e.call(_d, this.resizeTarget, attrs);
+            (_g = (_f = this.options) === null || _f === void 0 ? void 0 : _f.onChange) === null || _g === void 0 ? void 0 : _g.call(_f, this.resizeTarget);
         };
         ResizePlugin.prototype.startResize = function (e) {
             var _a, _b;

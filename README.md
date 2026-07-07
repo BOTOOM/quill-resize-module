@@ -22,6 +22,7 @@ A modern, secure module for the Quill rich text editor that allows you to resize
 - 🔔 **Typed Callbacks** - `onSelect`, `onResizeStart`, `onResize`, `onResizeEnd`, `onAlignChange`
 - 📐 **Resize Constraints** - min/max width/height, aspect-ratio locking (globally or per embed tag), and `%`/`px` size modes with configurable presets
 - 🧩 **Custom Embeds** - configure which tags trigger the overlay (`embedTags`) or resolve arbitrary wrapper elements (`resolveEmbed`) without forking
+- ✏️ **Media Attributes** - edit `alt` text and `title` from the toolbar, persisted through Quill's Delta model
 
 ## 🚀 Demo
 
@@ -104,6 +105,7 @@ const quill = new Quill("#editor", {
 | `toolbar.alignTools` | boolean | `true` | Show alignment tools |
 | `toolbar.sizePresets` | number[] | `[100, 50]` | Percentages rendered as quick-size preset buttons |
 | `toolbar.sizeUnit` | `"%"` \| `"px"` | `"%"` | Unit applied by preset buttons and the width input (see [Resize Constraints & Modes](#-resize-constraints--modes)) |
+| `toolbar.attributesTool` | boolean | `true` | Show the "edit attributes" button that opens the alt/title panel (see [Media Attributes](#️-media-attributes-alt-text--title)) |
 | `constraints` | `ResizeConstraints` | `{}` | Min/max width & height and aspect-ratio locking, applied to every target (see below) |
 | `constraintsByTag` | object | `{}` | Per-tag override of `constraints` (e.g. `{ img: {...}, video: {...}, myEmbed: {...} }`) |
 | `embedTags` | string[] | `["img", "video"]` | Tags that trigger the resize overlay on click. **Fully replaces** the default list — set it to add custom tags (e.g. `["img", "video", "canvas"]`) |
@@ -124,6 +126,7 @@ const quill = new Quill("#editor", {
 | `onResize` | `(element: HTMLElement, event: ResizeChangeEvent) => void` | During a resize gesture. Fires on every `pointermove` for drags; once with the final size for keyboard/toolbar-driven resizes. |
 | `onResizeEnd` | `(element: HTMLElement) => void` | When a resize gesture ends. |
 | `onAlignChange` | `(element: HTMLElement, align: "left" \| "center" \| "right" \| null) => void` | When alignment changes via the toolbar. |
+| `onAttributesChange` | `(element: HTMLElement, attrs: ResizeMediaAttributes) => void` | When `alt`/`title` are saved through the attributes panel. |
 
 `ResizeChangeEvent` is `{ target: HTMLElement; width: number; height: number; align: "left" | "center" | "right" | null }`.
 
@@ -174,6 +177,36 @@ const quill = new Quill("#editor", {
   },
 });
 ```
+
+## ✏️ Media Attributes (Alt Text & Title)
+
+Every resizable target gets an "edit attributes" button in the toolbar
+(hide it with `toolbar.attributesTool: false`) that opens a small panel
+for editing `alt` text and `title`:
+
+```javascript
+const quill = new Quill("#editor", {
+  modules: {
+    resize: {
+      onAttributesChange: (element, { alt, title }) => {
+        console.log("attributes saved", { alt, title });
+      },
+    },
+  },
+});
+```
+
+- The **Alt text** field is only shown for `<img>` targets, matching
+  native HTML semantics — videos and iframes don't have an `alt`
+  attribute.
+- The **Title** field is available for any target and sets a plain HTML
+  `title` attribute (shown as a native tooltip by the browser).
+- Both fields are saved into Quill's Delta model (`alt`/`title` Delta
+  attributes) when a live Quill instance is available, so they survive
+  `getContents()`/`setContents()` round trips exactly like width, height,
+  and alignment.
+- Pressing **Escape** while focused inside the panel closes just the
+  panel, leaving the resize overlay open.
 
 ## 📐 Resize Constraints & Modes
 
