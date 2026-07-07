@@ -308,4 +308,136 @@ describe("ResizePlugin", () => {
 
     expect(removeSpy).toHaveBeenCalledWith("scroll", expect.any(Function));
   });
+
+  describe("toolbar visibility options", () => {
+    it("shows the toolbar and both button groups by default", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container);
+
+      const toolbar = plugin.resizer?.querySelector(
+        ".toolbar"
+      ) as HTMLElement;
+      const sizeGroup = plugin.resizer?.querySelector(
+        '[data-group="size"]'
+      ) as HTMLElement;
+      const alignGroup = plugin.resizer?.querySelector(
+        '[data-group="align"]'
+      ) as HTMLElement;
+
+      expect(toolbar.style.display).toBe("");
+      expect(sizeGroup.style.display).toBe("");
+      expect(alignGroup.style.display).toBe("");
+    });
+
+    it("hides the whole toolbar when showToolbar is false", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container, {
+        showToolbar: false,
+      });
+
+      const toolbar = plugin.resizer?.querySelector(
+        ".toolbar"
+      ) as HTMLElement;
+      expect(toolbar.style.display).toBe("none");
+    });
+
+    it("hides only the size tools when toolbar.sizeTools is false", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container, {
+        toolbar: { sizeTools: false },
+      });
+
+      const sizeGroup = plugin.resizer?.querySelector(
+        '[data-group="size"]'
+      ) as HTMLElement;
+      const alignGroup = plugin.resizer?.querySelector(
+        '[data-group="align"]'
+      ) as HTMLElement;
+      expect(sizeGroup.style.display).toBe("none");
+      expect(alignGroup.style.display).toBe("");
+    });
+
+    it("hides only the align tools when toolbar.alignTools is false", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container, {
+        toolbar: { alignTools: false },
+      });
+
+      const alignGroup = plugin.resizer?.querySelector(
+        '[data-group="align"]'
+      ) as HTMLElement;
+      expect(alignGroup.style.display).toBe("none");
+    });
+
+    it("supports the deprecated toolbar.alingTools alias", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container, {
+        toolbar: { alingTools: false },
+      });
+
+      const alignGroup = plugin.resizer?.querySelector(
+        '[data-group="align"]'
+      ) as HTMLElement;
+      expect(alignGroup.style.display).toBe("none");
+    });
+
+    it("prefers toolbar.alignTools over the deprecated alingTools alias when both are set", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+
+      const plugin = createPlugin(target, container, {
+        toolbar: { alignTools: true, alingTools: false },
+      });
+
+      const alignGroup = plugin.resizer?.querySelector(
+        '[data-group="align"]'
+      ) as HTMLElement;
+      expect(alignGroup.style.display).toBe("");
+    });
+
+    it("hides the size label by default and shows it when showSize is true", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      makeEditable(target);
+      stubGeometry(container, { left: 0, top: 0, width: 500, height: 400 });
+      stubGeometry(target, { left: 0, top: 0, width: 320, height: 180 });
+
+      const hidden = createPlugin(target, container);
+      const hiddenLabel = hidden.resizer?.querySelector(
+        ".size-label"
+      ) as HTMLElement;
+      expect(hiddenLabel.style.display).toBe("none");
+
+      const container2 = createContainer();
+      const target2 = createTarget();
+      container2.appendChild(target2);
+      makeEditable(target2);
+      stubGeometry(container2, { left: 0, top: 0, width: 500, height: 400 });
+      stubGeometry(target2, { left: 0, top: 0, width: 320, height: 180 });
+
+      const shown = createPlugin(target2, container2, { showSize: true });
+      const shownLabel = shown.resizer?.querySelector(
+        ".size-label"
+      ) as HTMLElement;
+      expect(shownLabel.style.display).toBe("");
+      expect(shownLabel.textContent).toBe("320 x 180");
+    });
+  });
 });

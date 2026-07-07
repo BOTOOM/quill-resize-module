@@ -18,9 +18,26 @@ class ResizeElement extends HTMLElement {
   [key: string]: any;
 }
 
+interface ToolbarOptions {
+  /** Show/hide the width/size buttons in the toolbar. Default: true. */
+  sizeTools?: boolean;
+  /** Show/hide the alignment buttons in the toolbar. Default: true. */
+  alignTools?: boolean;
+  /**
+   * @deprecated Use `alignTools` instead. Kept for backward compatibility
+   * with the previous (misspelled) option name.
+   */
+  alingTools?: boolean;
+}
+
 interface ResizePluginOption {
   locale?: Locale;
   onChange?: (element: HTMLElement) => void;
+  /** Show/hide the whole floating toolbar. Default: true. */
+  showToolbar?: boolean;
+  /** Display the current width/height as a small label. Default: false. */
+  showSize?: boolean;
+  toolbar?: ToolbarOptions;
   /**
    * Live Quill instance, used internally to persist width/height/align
    * through the Delta model. Set automatically by QuillResizeModule; not
@@ -31,14 +48,15 @@ interface ResizePluginOption {
 }
 const template = `
 <div class="handler" title="{0}"></div>
+<span class="size-label"></span>
 <div class="toolbar">
-  <div class="group">
+  <div class="group" data-group="size">
     <a class="btn" data-type="width" data-styles="width:100%">100%</a>
     <a class="btn" data-type="width" data-styles="width:50%">50%</a>
     <span class="input-wrapper"><input data-type="width" maxlength="3" /><span class="suffix">%</span><span class="tooltip">{5}</span></span>
     <a class="btn" data-type="width" data-styles="width:auto; height:auto;">{4}</a>
   </div>
-  <div class="group">
+  <div class="group" data-group="align">
     <a class="btn" data-type="align" data-styles="float:left">{1}</a>
     <a class="btn" data-type="align" data-styles="display:block;margin:auto;">{2}</a>
     <a class="btn" data-type="align" data-styles="float:right;">{3}</a>
@@ -102,6 +120,49 @@ class ResizePlugin {
       this.container.appendChild(resizer);
     }
     this.resizer = resizer;
+    this.applyToolbarVisibility();
+  }
+  /**
+   * Applies the showToolbar/toolbar.sizeTools/toolbar.alignTools options
+   * to the overlay markup. Re-run on every initResizer() call (not just on
+   * first creation) since the overlay element may be reused across
+   * activations of the same ResizePlugin/QuillResizeModule instance.
+   */
+  applyToolbarVisibility() {
+    if (!this.resizer) {
+      return;
+    }
+    const showToolbar = this.options?.showToolbar !== false;
+    const toolbarOptions: ToolbarOptions = this.options?.toolbar || {};
+    const showSizeTools = toolbarOptions.sizeTools !== false;
+    // `alingTools` is the deprecated (misspelled) alias for `alignTools`;
+    // prefer the corrected name when both are provided.
+    const showAlignTools =
+      toolbarOptions.alignTools ?? toolbarOptions.alingTools ?? true;
+
+    const toolbar = this.resizer.querySelector(".toolbar") as HTMLElement;
+    if (toolbar) {
+      toolbar.style.display = showToolbar ? "" : "none";
+    }
+    const sizeGroup = this.resizer.querySelector(
+      '[data-group="size"]'
+    ) as HTMLElement;
+    if (sizeGroup) {
+      sizeGroup.style.display = showSizeTools ? "" : "none";
+    }
+    const alignGroup = this.resizer.querySelector(
+      '[data-group="align"]'
+    ) as HTMLElement;
+    if (alignGroup) {
+      alignGroup.style.display = showAlignTools ? "" : "none";
+    }
+
+    const sizeLabel = this.resizer.querySelector(
+      ".size-label"
+    ) as HTMLElement;
+    if (sizeLabel) {
+      sizeLabel.style.display = this.options?.showSize ? "" : "none";
+    }
   }
   positionResizerToTarget(el: HTMLElement) {
     if (this.resizer !== null) {
@@ -125,7 +186,18 @@ class ResizePlugin {
 
       this.resizer.style.setProperty("width", el.clientWidth + "px");
       this.resizer.style.setProperty("height", el.clientHeight + "px");
-      
+
+      if (this.options?.showSize) {
+        const sizeLabel = this.resizer.querySelector(
+          ".size-label"
+        ) as HTMLElement;
+        if (sizeLabel) {
+          sizeLabel.textContent = `${Math.round(el.clientWidth)} x ${Math.round(
+            el.clientHeight
+          )}`;
+        }
+      }
+
       // Add responsive classes based on element size
       const toolbar = this.resizer.querySelector('.toolbar') as HTMLElement;
       if (toolbar) {

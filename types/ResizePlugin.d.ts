@@ -14,9 +14,25 @@ declare class ResizeElement extends HTMLElement {
     originSize?: Size | null;
     [key: string]: any;
 }
+interface ToolbarOptions {
+    /** Show/hide the width/size buttons in the toolbar. Default: true. */
+    sizeTools?: boolean;
+    /** Show/hide the alignment buttons in the toolbar. Default: true. */
+    alignTools?: boolean;
+    /**
+     * @deprecated Use `alignTools` instead. Kept for backward compatibility
+     * with the previous (misspelled) option name.
+     */
+    alingTools?: boolean;
+}
 interface ResizePluginOption {
     locale?: Locale;
     onChange?: (element: HTMLElement) => void;
+    /** Show/hide the whole floating toolbar. Default: true. */
+    showToolbar?: boolean;
+    /** Display the current width/height as a small label. Default: false. */
+    showSize?: boolean;
+    toolbar?: ToolbarOptions;
     /**
      * Live Quill instance, used internally to persist width/height/align
      * through the Delta model. Set automatically by QuillResizeModule; not
@@ -36,6 +52,13 @@ declare class ResizePlugin {
     private onScroll;
     constructor(resizeTarget: ResizeElement, container: HTMLElement, options?: ResizePluginOption);
     initResizer(): void;
+    /**
+     * Applies the showToolbar/toolbar.sizeTools/toolbar.alignTools options
+     * to the overlay markup. Re-run on every initResizer() call (not just on
+     * first creation) since the overlay element may be reused across
+     * activations of the same ResizePlugin/QuillResizeModule instance.
+     */
+    applyToolbarVisibility(): void;
     positionResizerToTarget(el: HTMLElement): void;
     bindEvents(): void;
     _setStylesForToolbar(type: string, styles: string | undefined): void;

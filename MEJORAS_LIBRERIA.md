@@ -172,6 +172,19 @@ Impacto:
 
 - Reduce confusion, issues repetidos y errores de integracion.
 
+**✅ Implementado**: `showToolbar`, `showSize`, `toolbar.sizeTools` y
+`toolbar.alignTools` ahora son opciones reales, leidas y aplicadas por
+`ResizePlugin` (ver `applyToolbarVisibility()` en `src/ResizePlugin.ts`).
+`toolbar.alingTools` (nombre historico con la errata) se mantiene como
+alias deprecado con prioridad para `alignTools` si ambos se proveen.
+`destory()` ya fue renombrado a `destroy()` con alias de compatibilidad
+(ver seccion 13). Se publican `QuillResizeModuleOptions`, `ToolbarOptions`
+y `ResizeModuleHandle` como exports nombrados desde `src/main.ts`/`types/main.d.ts`
+en lugar de depender solo del escape hatch `[index: string]: any`. README
+actualizado para usar `alignTools` en los ejemplos, documentando el alias
+deprecado. Cubierto por 6 tests nuevos en
+`describe("toolbar visibility options")` (`test/ResizePlugin.test.ts`).
+
 ### 3. Rehacer tests y quality gates
 
 Objetivo:

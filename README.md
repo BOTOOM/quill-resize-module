@@ -93,10 +93,15 @@ const quill = new Quill("#editor", {
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `showToolbar` | boolean | `true` | Show/hide the toolbar |
-| `showSize` | boolean | `false` | Display current dimensions |
+| `showSize` | boolean | `false` | Display current dimensions as a floating label |
 | `locale` | object | `{}` | Custom language strings |
 | `toolbar.sizeTools` | boolean | `true` | Show size adjustment tools |
-| `toolbar.alingTools` | boolean | `true` | Show alignment tools |
+| `toolbar.alignTools` | boolean | `true` | Show alignment tools |
+
+> `toolbar.alingTools` (the original, misspelled name) still works as a
+> deprecated alias for `toolbar.alignTools`, but new code should use the
+> corrected name.
+
 
 ### Locale Configuration
 
@@ -119,12 +124,12 @@ const quill = new Quill("#editor", {
 ### Toolbar Customization
 
 ```javascript
-// Hide alignment tools (for newer Quill versions)
+// Hide alignment tools (e.g. for content pipelines that don't need it)
 const quill = new Quill("#editor", {
   modules: {
     resize: {
       toolbar: {
-        alingTools: false,  // Hide alignment
+        alignTools: false, // Hide alignment
         sizeTools: true,   // Keep size tools
       },
     },
@@ -134,14 +139,14 @@ const quill = new Quill("#editor", {
 
 ## 🔧 Advanced Configuration
 
-For the latest versions of Quill that don't support the `style` attribute:
+Combine toolbar visibility with the live size label:
 
 ```javascript
 const quill = new Quill("#editor", {
   modules: {
     resize: {
       toolbar: {
-        alingTools: false,  // Disable alignment tools
+        alignTools: false, // Disable alignment tools
       },
       showSize: true,
     },

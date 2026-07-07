@@ -9,9 +9,26 @@ interface Quill {
   on: any;
   off?: any;
 }
+interface ToolbarOptions {
+  /** Show/hide the width/size buttons in the toolbar. Default: true. */
+  sizeTools?: boolean;
+  /** Show/hide the alignment buttons in the toolbar. Default: true. */
+  alignTools?: boolean;
+  /**
+   * @deprecated Use `alignTools` instead. Kept for backward compatibility
+   * with the previous (misspelled) option name.
+   */
+  alingTools?: boolean;
+}
+
 interface QuillResizeModuleOptions {
   locale?: Locale;
   onChange?: (element: HTMLElement) => void;
+  /** Show/hide the whole floating toolbar. Default: true. */
+  showToolbar?: boolean;
+  /** Display the current width/height as a small label. Default: false. */
+  showSize?: boolean;
+  toolbar?: ToolbarOptions;
   [index: string]: any;
 }
 
@@ -162,3 +179,4 @@ function QuillResizeModule(
 }
 
 export default QuillResizeModule;
+export type { QuillResizeModuleOptions, ToolbarOptions, ResizeModuleHandle };
