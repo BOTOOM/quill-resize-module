@@ -148,6 +148,16 @@ declare class ResizePlugin {
     private scrollParent;
     private onScroll;
     private activePointerId;
+    /**
+     * Touch pointers currently down anywhere on the overlay, keyed by
+     * pointerId. Tracked independently of `startResizePosition` (which only
+     * covers a single-pointer drag started on `.handler`) so a second finger
+     * landing anywhere on the selected media — not just the handle — can
+     * start a pinch-to-resize gesture.
+     */
+    private activeTouches;
+    /** Non-null while exactly two touches are pinching; null otherwise. */
+    private pinchStart;
     constructor(resizeTarget: ResizeElement, container: HTMLElement, options?: ResizePluginOption);
     /**
      * Builds the typed payload passed to onResize/onAlignChange, reading the

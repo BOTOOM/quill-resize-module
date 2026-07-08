@@ -25,7 +25,7 @@ function styleInject(css, ref) {
   }
 }
 
-var css_248z = "#editor-resizer {\n  position: absolute;\n  border: 1px dashed #fff;\n  background-color: rgba(0, 0, 0, 0.5);\n  /* .handler and .btn are real <button> elements (for native keyboard\n     activation/focusability), which come with browser default chrome\n     (padding, border, background, font). Reset that here; the more\n     specific .handler/.btn rules below win the cascade and re-apply the\n     actual look, so this is purely an appearance reset, not a behavior\n     change. `all: unset` also clears the default focus outline, so it is\n     restored explicitly via :focus-visible. */\n}\n#editor-resizer button {\n  all: unset;\n  box-sizing: border-box;\n  cursor: pointer;\n}\n#editor-resizer button:focus-visible {\n  outline: 2px solid #4f9eff;\n  outline-offset: 2px;\n}\n#editor-resizer .handler {\n  position: absolute;\n  right: -5px;\n  bottom: -5px;\n  width: 10px;\n  height: 10px;\n  border: 1px solid #333;\n  background-color: rgba(255, 255, 255, 0.8);\n  cursor: nwse-resize;\n  user-select: none;\n  /* Prevent the browser's native touch scrolling/panning gestures from\n       competing with a pointer-based resize drag on touch screens. */\n  touch-action: none;\n  /* The visible handle is intentionally small so it doesn't obscure the\n       media being resized, but a 10x10px target is far below the ~44px\n       minimum recommended for touch input. This invisible pseudo-element\n       enlarges the actual hit/pointer area without changing how the\n       handle looks; pointer/touch events anywhere within it still report\n       `.handler` as their target since pseudo-elements aren't\n       independently targetable. */\n}\n#editor-resizer .handler::before {\n  content: \"\";\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  width: 40px;\n  height: 40px;\n  transform: translate(-50%, -50%);\n}\n#editor-resizer .size-label {\n  position: absolute;\n  left: 50%;\n  bottom: -1.6em;\n  transform: translateX(-50%);\n  padding: 0.1em 0.5em;\n  border-radius: 3px;\n  background-color: rgba(0, 0, 0, 0.65);\n  color: #fff;\n  font-size: 0.75em;\n  white-space: nowrap;\n  user-select: none;\n  pointer-events: none;\n}\n#editor-resizer .toolbar {\n  position: absolute;\n  top: -3em;\n  left: 50%;\n  min-width: 200px;\n  /* Minimum width for small objects */\n  max-width: 400px;\n  /* Maximum width for very small objects */\n  padding: 0.5em;\n  border: 1px solid #fff;\n  border-radius: 3px;\n  background-color: #fff;\n  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);\n  transform: translateX(-50%);\n  z-index: 1000;\n  white-space: normal;\n  /* Allow text wrapping */\n  /* Responsive positioning for very small objects */\n}\n#editor-resizer .toolbar.small-object {\n  min-width: 250px;\n  top: -4em;\n}\n#editor-resizer .toolbar.very-small-object {\n  min-width: 300px;\n  top: -5em;\n  left: 0;\n  transform: none;\n}\n#editor-resizer .toolbar .group {\n  display: flex;\n  border: 1px solid #aaa;\n  border-radius: 6px;\n  overflow: hidden;\n  white-space: nowrap;\n  text-align: center;\n  flex-wrap: wrap;\n  /* Allow wrapping for very small objects */\n  /* Input wrapper improvements */\n}\n#editor-resizer .toolbar .group:not(:first-child) {\n  margin-top: 0.5em;\n}\n#editor-resizer .toolbar .group .btn {\n  flex: 1 0 auto;\n  /* Allow buttons to shrink */\n  min-width: 40px;\n  /* Minimum button width */\n  text-align: center;\n  padding: 0 0.3rem;\n  /* Reduced padding */\n  display: inline-block;\n  color: rgba(0, 0, 0, 0.65);\n  vertical-align: top;\n  line-height: 1.8;\n  /* Slightly reduced line height */\n  user-select: none;\n  font-size: 0.85em;\n  /* Smaller font for tight spaces */\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  /* Tooltip for truncated text */\n}\n#editor-resizer .toolbar .group .btn.btn-group {\n  padding: 0;\n  display: inline-flex;\n  line-height: 1.8em;\n  min-width: 60px;\n}\n#editor-resizer .toolbar .group .btn.btn-group .inner-btn {\n  flex: 1 0 0;\n  font-size: 1.5em;\n  /* Smaller icons */\n  width: 50%;\n  cursor: pointer;\n}\n#editor-resizer .toolbar .group .btn.btn-group .inner-btn:first-child {\n  border-right: 1px solid #ddd;\n}\n#editor-resizer .toolbar .group .btn.btn-group .inner-btn:active {\n  transform: scale(0.8);\n}\n#editor-resizer .toolbar .group .btn:not(:last-child) {\n  border-right: 1px solid #bbb;\n}\n#editor-resizer .toolbar .group .btn:not(.btn-group):active {\n  background-color: rgba(0, 0, 0, 0.1);\n}\n#editor-resizer .toolbar .group .btn:hover {\n  position: relative;\n}\n#editor-resizer .toolbar .group .btn:hover::after {\n  content: attr(data-full-text);\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  transform: translateX(-50%);\n  background-color: #333;\n  color: white;\n  padding: 4px 8px;\n  border-radius: 4px;\n  font-size: 12px;\n  white-space: nowrap;\n  z-index: 1001;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.3s;\n}\n#editor-resizer .toolbar .group .btn:hover:hover::after {\n  opacity: 1;\n}\n#editor-resizer .toolbar .group .input-wrapper {\n  position: relative;\n  display: inline-flex;\n  align-items: center;\n  min-width: 60px;\n  flex: 1 0 auto;\n}\n#editor-resizer .toolbar .group .input-wrapper input {\n  width: 40px;\n  text-align: center;\n  border: 1px solid #ddd;\n  border-radius: 2px;\n  padding: 2px 4px;\n  font-size: 0.85em;\n}\n#editor-resizer .toolbar .group .input-wrapper .suffix {\n  font-size: 0.75em;\n  margin-left: 2px;\n}\n#editor-resizer .toolbar .group .input-wrapper .tooltip {\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  transform: translateX(-50%);\n  background-color: #333;\n  color: white;\n  padding: 4px 8px;\n  border-radius: 4px;\n  font-size: 11px;\n  white-space: nowrap;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.3s;\n  z-index: 1001;\n}\n#editor-resizer .toolbar .group .input-wrapper:hover .tooltip {\n  opacity: 1;\n}\n#editor-resizer .last-item {\n  margin-right: 5px;\n}\n#editor-resizer .showSize {\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  padding: 0.1em;\n  border: 1px solid rgba(255, 255, 255, 0.8);\n  border-radius: 2px;\n  background-color: rgba(255, 255, 255, 0.8);\n  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);\n  transform: translateX(-50%);\n  font-size: 0.8em;\n  /* Smaller font for tight spaces */\n}\n#editor-resizer .attributes-panel {\n  position: absolute;\n  top: -3em;\n  left: 50%;\n  transform: translateX(-50%);\n  min-width: 220px;\n  padding: 0.6em;\n  border: 1px solid #fff;\n  border-radius: 3px;\n  background-color: #fff;\n  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);\n  z-index: 1000;\n}\n#editor-resizer .attributes-panel .field {\n  display: block;\n  margin-bottom: 0.4em;\n  font-size: 0.8em;\n  color: rgba(0, 0, 0, 0.65);\n}\n#editor-resizer .attributes-panel .field input {\n  display: block;\n  width: 100%;\n  margin-top: 0.2em;\n  box-sizing: border-box;\n  border: 1px solid #ddd;\n  border-radius: 2px;\n  padding: 0.3em;\n  font-size: 1em;\n}\n#editor-resizer .attributes-panel .actions {\n  display: flex;\n  justify-content: flex-end;\n  gap: 0.4em;\n}\n#editor-resizer .attributes-panel .actions .btn {\n  padding: 0.2em 0.6em;\n  border: 1px solid #aaa;\n  border-radius: 3px;\n  font-size: 0.8em;\n  color: rgba(0, 0, 0, 0.65);\n}\n";
+var css_248z = "#editor-resizer {\n  position: absolute;\n  border: 1px dashed #fff;\n  background-color: rgba(0, 0, 0, 0.5);\n  /* Prevents the browser from treating a two-finger touch anywhere over\n     the selected media (not just the handle) as a native pinch-zoom/pan\n     gesture, so it can drive pinch-to-resize instead. */\n  touch-action: none;\n  /* .handler and .btn are real <button> elements (for native keyboard\n     activation/focusability), which come with browser default chrome\n     (padding, border, background, font). Reset that here; the more\n     specific .handler/.btn rules below win the cascade and re-apply the\n     actual look, so this is purely an appearance reset, not a behavior\n     change. `all: unset` also clears the default focus outline, so it is\n     restored explicitly via :focus-visible. */\n}\n#editor-resizer button {\n  all: unset;\n  box-sizing: border-box;\n  cursor: pointer;\n}\n#editor-resizer button:focus-visible {\n  outline: 2px solid #4f9eff;\n  outline-offset: 2px;\n}\n#editor-resizer .handler {\n  position: absolute;\n  right: -5px;\n  bottom: -5px;\n  width: 10px;\n  height: 10px;\n  border: 1px solid #333;\n  background-color: rgba(255, 255, 255, 0.8);\n  cursor: nwse-resize;\n  user-select: none;\n  /* Prevent the browser's native touch scrolling/panning gestures from\n       competing with a pointer-based resize drag on touch screens. */\n  touch-action: none;\n  /* The visible handle is intentionally small so it doesn't obscure the\n       media being resized, but a 10x10px target is far below the ~44px\n       minimum recommended for touch input. This invisible pseudo-element\n       enlarges the actual hit/pointer area without changing how the\n       handle looks; pointer/touch events anywhere within it still report\n       `.handler` as their target since pseudo-elements aren't\n       independently targetable. */\n}\n#editor-resizer .handler::before {\n  content: \"\";\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  width: 40px;\n  height: 40px;\n  transform: translate(-50%, -50%);\n}\n#editor-resizer .size-label {\n  position: absolute;\n  left: 50%;\n  bottom: -1.6em;\n  transform: translateX(-50%);\n  padding: 0.1em 0.5em;\n  border-radius: 3px;\n  background-color: rgba(0, 0, 0, 0.65);\n  color: #fff;\n  font-size: 0.75em;\n  white-space: nowrap;\n  user-select: none;\n  pointer-events: none;\n}\n#editor-resizer .toolbar {\n  position: absolute;\n  top: -3em;\n  left: 50%;\n  min-width: 200px;\n  /* Minimum width for small objects */\n  max-width: 400px;\n  /* Maximum width for very small objects */\n  padding: 0.5em;\n  border: 1px solid #fff;\n  border-radius: 3px;\n  background-color: #fff;\n  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);\n  transform: translateX(-50%);\n  z-index: 1000;\n  white-space: normal;\n  /* Allow text wrapping */\n  /* Responsive positioning for very small objects */\n}\n#editor-resizer .toolbar.small-object {\n  min-width: 250px;\n  top: -4em;\n}\n#editor-resizer .toolbar.very-small-object {\n  min-width: 300px;\n  top: -5em;\n  left: 0;\n  transform: none;\n}\n#editor-resizer .toolbar .group {\n  display: flex;\n  border: 1px solid #aaa;\n  border-radius: 6px;\n  overflow: hidden;\n  white-space: nowrap;\n  text-align: center;\n  flex-wrap: wrap;\n  /* Allow wrapping for very small objects */\n  /* Input wrapper improvements */\n}\n#editor-resizer .toolbar .group:not(:first-child) {\n  margin-top: 0.5em;\n}\n#editor-resizer .toolbar .group .btn {\n  flex: 1 0 auto;\n  /* Allow buttons to shrink */\n  min-width: 40px;\n  /* Minimum button width */\n  text-align: center;\n  padding: 0 0.3rem;\n  /* Reduced padding */\n  display: inline-block;\n  color: rgba(0, 0, 0, 0.65);\n  vertical-align: top;\n  line-height: 1.8;\n  /* Slightly reduced line height */\n  user-select: none;\n  font-size: 0.85em;\n  /* Smaller font for tight spaces */\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  /* Tooltip for truncated text */\n}\n#editor-resizer .toolbar .group .btn.btn-group {\n  padding: 0;\n  display: inline-flex;\n  line-height: 1.8em;\n  min-width: 60px;\n}\n#editor-resizer .toolbar .group .btn.btn-group .inner-btn {\n  flex: 1 0 0;\n  font-size: 1.5em;\n  /* Smaller icons */\n  width: 50%;\n  cursor: pointer;\n}\n#editor-resizer .toolbar .group .btn.btn-group .inner-btn:first-child {\n  border-right: 1px solid #ddd;\n}\n#editor-resizer .toolbar .group .btn.btn-group .inner-btn:active {\n  transform: scale(0.8);\n}\n#editor-resizer .toolbar .group .btn:not(:last-child) {\n  border-right: 1px solid #bbb;\n}\n#editor-resizer .toolbar .group .btn:not(.btn-group):active {\n  background-color: rgba(0, 0, 0, 0.1);\n}\n#editor-resizer .toolbar .group .btn:hover {\n  position: relative;\n}\n#editor-resizer .toolbar .group .btn:hover::after {\n  content: attr(data-full-text);\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  transform: translateX(-50%);\n  background-color: #333;\n  color: white;\n  padding: 4px 8px;\n  border-radius: 4px;\n  font-size: 12px;\n  white-space: nowrap;\n  z-index: 1001;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.3s;\n}\n#editor-resizer .toolbar .group .btn:hover:hover::after {\n  opacity: 1;\n}\n#editor-resizer .toolbar .group .input-wrapper {\n  position: relative;\n  display: inline-flex;\n  align-items: center;\n  min-width: 60px;\n  flex: 1 0 auto;\n}\n#editor-resizer .toolbar .group .input-wrapper input {\n  width: 40px;\n  text-align: center;\n  border: 1px solid #ddd;\n  border-radius: 2px;\n  padding: 2px 4px;\n  font-size: 0.85em;\n}\n#editor-resizer .toolbar .group .input-wrapper .suffix {\n  font-size: 0.75em;\n  margin-left: 2px;\n}\n#editor-resizer .toolbar .group .input-wrapper .tooltip {\n  position: absolute;\n  bottom: 100%;\n  left: 50%;\n  transform: translateX(-50%);\n  background-color: #333;\n  color: white;\n  padding: 4px 8px;\n  border-radius: 4px;\n  font-size: 11px;\n  white-space: nowrap;\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 0.3s;\n  z-index: 1001;\n}\n#editor-resizer .toolbar .group .input-wrapper:hover .tooltip {\n  opacity: 1;\n}\n#editor-resizer .last-item {\n  margin-right: 5px;\n}\n#editor-resizer .showSize {\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  padding: 0.1em;\n  border: 1px solid rgba(255, 255, 255, 0.8);\n  border-radius: 2px;\n  background-color: rgba(255, 255, 255, 0.8);\n  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);\n  transform: translateX(-50%);\n  font-size: 0.8em;\n  /* Smaller font for tight spaces */\n}\n#editor-resizer .attributes-panel {\n  position: absolute;\n  top: -3em;\n  left: 50%;\n  transform: translateX(-50%);\n  min-width: 220px;\n  padding: 0.6em;\n  border: 1px solid #fff;\n  border-radius: 3px;\n  background-color: #fff;\n  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);\n  z-index: 1000;\n}\n#editor-resizer .attributes-panel .field {\n  display: block;\n  margin-bottom: 0.4em;\n  font-size: 0.8em;\n  color: rgba(0, 0, 0, 0.65);\n}\n#editor-resizer .attributes-panel .field input {\n  display: block;\n  width: 100%;\n  margin-top: 0.2em;\n  box-sizing: border-box;\n  border: 1px solid #ddd;\n  border-radius: 2px;\n  padding: 0.3em;\n  font-size: 1em;\n}\n#editor-resizer .attributes-panel .actions {\n  display: flex;\n  justify-content: flex-end;\n  gap: 0.4em;\n}\n#editor-resizer .attributes-panel .actions .btn {\n  padding: 0.2em 0.6em;\n  border: 1px solid #aaa;\n  border-radius: 3px;\n  font-size: 0.8em;\n  color: rgba(0, 0, 0, 0.65);\n}\n";
 styleInject(css_248z);
 
 class I18n {
@@ -355,6 +355,16 @@ class ResizePlugin {
         this.startResizePosition = null;
         this.scrollParent = null;
         this.activePointerId = null;
+        /**
+         * Touch pointers currently down anywhere on the overlay, keyed by
+         * pointerId. Tracked independently of `startResizePosition` (which only
+         * covers a single-pointer drag started on `.handler`) so a second finger
+         * landing anywhere on the selected media — not just the handle — can
+         * start a pinch-to-resize gesture.
+         */
+        this.activeTouches = new Map();
+        /** Non-null while exactly two touches are pinching; null otherwise. */
+        this.pinchStart = null;
         this.i18n = new I18n((options === null || options === void 0 ? void 0 : options.locale) || defaultLocale);
         this.options = options;
         this.resizeTarget = resizeTarget;
@@ -825,8 +835,33 @@ class ResizePlugin {
         (_g = (_f = this.options) === null || _f === void 0 ? void 0 : _f.onChange) === null || _g === void 0 ? void 0 : _g.call(_f, this.resizeTarget);
     }
     startResize(e) {
-        var _a, _b;
+        var _a, _b, _c, _d;
         const target = e.target;
+        // Track every touch pointer landing anywhere on the overlay (not just
+        // the handle) so a second finger can start a pinch-to-resize gesture
+        // from any point over the selected media, the same way it would in a
+        // native photo app.
+        if (e.pointerType === "touch") {
+            this.activeTouches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (this.activeTouches.size === 2) {
+                // A second finger just landed: hand off from any single-pointer
+                // handle drag in progress to the pinch gesture instead.
+                this.startResizePosition = null;
+                const [a, b] = this.activeTouches.values();
+                this.pinchStart = {
+                    distance: Math.hypot(b.x - a.x, b.y - a.y),
+                    width: this.resizeTarget.clientWidth,
+                    height: this.resizeTarget.clientHeight,
+                };
+                (_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.onResizeStart) === null || _b === void 0 ? void 0 : _b.call(_a, this.resizeTarget);
+                return;
+            }
+            if (this.activeTouches.size > 2) {
+                // A third+ finger doesn't change anything; keep pinching from the
+                // original two.
+                return;
+            }
+        }
         // `button === 0` matches both the primary mouse button and the primary
         // contact point for touch/pen pointers (their `button` is 0 on
         // pointerdown), so this single check replaces the old mouse-only
@@ -847,13 +882,23 @@ class ResizePlugin {
             if (typeof target.setPointerCapture === "function") {
                 target.setPointerCapture(e.pointerId);
             }
-            (_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.onResizeStart) === null || _b === void 0 ? void 0 : _b.call(_a, this.resizeTarget);
+            (_d = (_c = this.options) === null || _c === void 0 ? void 0 : _c.onResizeStart) === null || _d === void 0 ? void 0 : _d.call(_c, this.resizeTarget);
         }
     }
     endResize(e) {
         var _a, _b, _c, _d, _e;
-        const wasResizing = this.startResizePosition !== null;
+        if (e && e.pointerType === "touch") {
+            this.activeTouches.delete(e.pointerId);
+        }
+        const wasSingleDrag = this.startResizePosition !== null;
+        // A pinch ends as soon as fewer than two fingers remain, even if one
+        // finger is still touching down — matching how native pinch gestures
+        // behave (lifting either finger stops the gesture).
+        const wasPinch = this.pinchStart !== null && this.activeTouches.size < 2;
         this.startResizePosition = null;
+        if (wasPinch) {
+            this.pinchStart = null;
+        }
         if (e &&
             this.activePointerId !== null &&
             typeof ((_a = e.target) === null || _a === void 0 ? void 0 : _a.releasePointerCapture) === "function") {
@@ -866,14 +911,32 @@ class ResizePlugin {
             }
         }
         this.activePointerId = null;
-        if (wasResizing) {
+        if (wasSingleDrag || wasPinch) {
             this._syncPersistence();
             (_c = (_b = this.options) === null || _b === void 0 ? void 0 : _b.onResizeEnd) === null || _c === void 0 ? void 0 : _c.call(_b, this.resizeTarget);
         }
         (_e = (_d = this.options) === null || _d === void 0 ? void 0 : _d.onChange) === null || _e === void 0 ? void 0 : _e.call(_d, this.resizeTarget);
     }
     resizing(e) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e, _f;
+        if (e.pointerType === "touch" && this.activeTouches.has(e.pointerId)) {
+            this.activeTouches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        }
+        if (this.pinchStart && this.activeTouches.size >= 2) {
+            const [a, b] = this.activeTouches.values();
+            const distance = Math.hypot(b.x - a.x, b.y - a.y);
+            // Guard against a division by (near) zero if both fingers landed on
+            // the exact same point.
+            const scale = this.pinchStart.distance > 0
+                ? distance / this.pinchStart.distance
+                : 1;
+            const clamped = this._clampSize(this.pinchStart.width * scale, this.pinchStart.height * scale);
+            this.resizeTarget.style.setProperty("width", clamped.width + "px");
+            this.resizeTarget.style.setProperty("height", clamped.height + "px");
+            this.positionResizerToTarget(this.resizeTarget);
+            (_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.onResize) === null || _b === void 0 ? void 0 : _b.call(_a, this.resizeTarget, this._buildChangeEvent());
+            return;
+        }
         if (!this.startResizePosition)
             return;
         const deltaX = e.clientX - this.startResizePosition.left;
@@ -882,7 +945,7 @@ class ResizePlugin {
         let height = this.startResizePosition.height;
         width += deltaX;
         height += deltaY;
-        if (e.altKey || ((_b = (_a = this.options) === null || _a === void 0 ? void 0 : _a.constraints) === null || _b === void 0 ? void 0 : _b.lockAspectRatio)) {
+        if (e.altKey || ((_d = (_c = this.options) === null || _c === void 0 ? void 0 : _c.constraints) === null || _d === void 0 ? void 0 : _d.lockAspectRatio)) {
             const originSize = this.resizeTarget.originSize;
             const rate = originSize.height / originSize.width;
             height = rate * width;
@@ -891,7 +954,7 @@ class ResizePlugin {
         this.resizeTarget.style.setProperty("width", clamped.width + "px");
         this.resizeTarget.style.setProperty("height", clamped.height + "px");
         this.positionResizerToTarget(this.resizeTarget);
-        (_d = (_c = this.options) === null || _c === void 0 ? void 0 : _c.onResize) === null || _d === void 0 ? void 0 : _d.call(_c, this.resizeTarget, this._buildChangeEvent());
+        (_f = (_e = this.options) === null || _e === void 0 ? void 0 : _e.onResize) === null || _f === void 0 ? void 0 : _f.call(_e, this.resizeTarget, this._buildChangeEvent());
     }
     destroy() {
         var _a;
@@ -902,6 +965,8 @@ class ResizePlugin {
         (_a = this.scrollParent) === null || _a === void 0 ? void 0 : _a.removeEventListener("scroll", this.onScroll);
         this.scrollParent = null;
         this.resizer = null;
+        this.activeTouches.clear();
+        this.pinchStart = null;
     }
     /**
      * @deprecated Use destroy() instead. Kept as an alias for backward

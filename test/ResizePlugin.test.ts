@@ -339,6 +339,264 @@ describe("ResizePlugin", () => {
     expect(releaseCapture).toHaveBeenCalledWith(42);
   });
 
+  describe("pinch-to-resize (two-finger touch)", () => {
+    it("scales both dimensions together when a second touch lands anywhere on the overlay", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      stubGeometry(target, { width: 100, height: 80 });
+
+      const plugin = createPlugin(target, container);
+      const resizer = plugin.resizer as HTMLElement;
+
+      // Two touches start 40px apart (not on the handle — pinch can start
+      // from anywhere over the selected media), then spread to 80px apart.
+      resizer.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          button: 0,
+          pointerId: 1,
+          pointerType: "touch",
+          clientX: 80,
+          clientY: 100,
+        })
+      );
+      resizer.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          button: 0,
+          pointerId: 2,
+          pointerType: "touch",
+          clientX: 120,
+          clientY: 100,
+        })
+      );
+      window.dispatchEvent(
+        new PointerEvent("pointermove", {
+          pointerId: 1,
+          pointerType: "touch",
+          clientX: 60,
+          clientY: 100,
+        })
+      );
+      window.dispatchEvent(
+        new PointerEvent("pointermove", {
+          pointerId: 2,
+          pointerType: "touch",
+          clientX: 140,
+          clientY: 100,
+        })
+      );
+
+      // Distance doubled (40 -> 80), so both dimensions double too.
+      expect(target.style.width).toBe("200px");
+      expect(target.style.height).toBe("160px");
+    });
+
+    it("clamps pinch-resized dimensions to configured constraints", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      stubGeometry(target, { width: 100, height: 80 });
+
+      const plugin = createPlugin(target, container, {
+        constraints: { maxWidth: 150, maxHeight: 120 },
+      });
+      const resizer = plugin.resizer as HTMLElement;
+
+      resizer.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          button: 0,
+          pointerId: 1,
+          pointerType: "touch",
+          clientX: 80,
+          clientY: 100,
+        })
+      );
+      resizer.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          button: 0,
+          pointerId: 2,
+          pointerType: "touch",
+          clientX: 120,
+          clientY: 100,
+        })
+      );
+      // Distance grows from 40 to 200 (5x) — well past maxWidth/maxHeight.
+      window.dispatchEvent(
+        new PointerEvent("pointermove", {
+          pointerId: 1,
+          pointerType: "touch",
+          clientX: 0,
+          clientY: 100,
+        })
+      );
+      window.dispatchEvent(
+        new PointerEvent("pointermove", {
+          pointerId: 2,
+          pointerType: "touch",
+          clientX: 200,
+          clientY: 100,
+        })
+      );
+
+      expect(target.style.width).toBe("150px");
+      expect(target.style.height).toBe("120px");
+    });
+
+    it("ends the pinch when one finger lifts, firing onResizeEnd once and ignoring further movement from the remaining finger", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      stubGeometry(target, { width: 100, height: 80 });
+      const onResizeEnd = vi.fn();
+
+      const plugin = createPlugin(target, container, { onResizeEnd });
+      const resizer = plugin.resizer as HTMLElement;
+
+      resizer.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          button: 0,
+          pointerId: 1,
+          pointerType: "touch",
+          clientX: 80,
+          clientY: 100,
+        })
+      );
+      resizer.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          button: 0,
+          pointerId: 2,
+          pointerType: "touch",
+          clientX: 120,
+          clientY: 100,
+        })
+      );
+      window.dispatchEvent(
+        new PointerEvent("pointermove", {
+          pointerId: 1,
+          pointerType: "touch",
+          clientX: 60,
+          clientY: 100,
+        })
+      );
+      window.dispatchEvent(
+        new PointerEvent("pointermove", {
+          pointerId: 2,
+          pointerType: "touch",
+          clientX: 140,
+          clientY: 100,
+        })
+      );
+      expect(target.style.width).toBe("200px");
+
+      // Lifting the first finger ends the pinch (one finger left = no gesture).
+      window.dispatchEvent(
+        new PointerEvent("pointerup", { pointerId: 1, pointerType: "touch" })
+      );
+      expect(onResizeEnd).toHaveBeenCalledTimes(1);
+
+      // The still-touching second finger shouldn't keep resizing on its own.
+      window.dispatchEvent(
+        new PointerEvent("pointermove", {
+          pointerId: 2,
+          pointerType: "touch",
+          clientX: 400,
+          clientY: 100,
+        })
+      );
+      expect(target.style.width).toBe("200px");
+
+      // Lifting the last finger shouldn't fire onResizeEnd a second time.
+      window.dispatchEvent(
+        new PointerEvent("pointerup", { pointerId: 2, pointerType: "touch" })
+      );
+      expect(onResizeEnd).toHaveBeenCalledTimes(1);
+    });
+
+    it("cancels an in-progress single-finger handle drag when a second touch starts a pinch", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      stubGeometry(target, { width: 100, height: 80 });
+
+      const plugin = createPlugin(target, container);
+      const handler = plugin.resizer?.querySelector(".handler") as HTMLElement;
+
+      handler.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          button: 0,
+          pointerId: 1,
+          pointerType: "touch",
+          clientX: 0,
+          clientY: 0,
+        })
+      );
+      expect(plugin.startResizePosition).not.toBeNull();
+
+      // A second finger lands elsewhere on the overlay: hand off to pinch.
+      (plugin.resizer as HTMLElement).dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          button: 0,
+          pointerId: 2,
+          pointerType: "touch",
+          clientX: 50,
+          clientY: 0,
+        })
+      );
+
+      expect(plugin.startResizePosition).toBeNull();
+    });
+
+    it("does not scale to Infinity/NaN if both pinch touches land on the exact same point", () => {
+      const container = createContainer();
+      const target = createTarget();
+      container.appendChild(target);
+      stubGeometry(target, { width: 100, height: 80 });
+
+      const plugin = createPlugin(target, container);
+      const resizer = plugin.resizer as HTMLElement;
+
+      resizer.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          button: 0,
+          pointerId: 1,
+          pointerType: "touch",
+          clientX: 100,
+          clientY: 100,
+        })
+      );
+      resizer.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          bubbles: true,
+          button: 0,
+          pointerId: 2,
+          pointerType: "touch",
+          clientX: 100,
+          clientY: 100,
+        })
+      );
+      window.dispatchEvent(
+        new PointerEvent("pointermove", {
+          pointerId: 1,
+          pointerType: "touch",
+          clientX: 150,
+          clientY: 100,
+        })
+      );
+
+      expect(target.style.width).toBe("100px");
+      expect(target.style.height).toBe("80px");
+    });
+  });
+
   it("removes the overlay from the container on destroy()", () => {
     const container = createContainer();
     const target = createTarget();

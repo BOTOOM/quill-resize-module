@@ -13,6 +13,21 @@ interface Position {
   width: number;
   height: number;
 }
+interface TouchPoint {
+  x: number;
+  y: number;
+}
+/**
+ * Snapshot taken the moment a second touch lands on the overlay, used as
+ * the baseline every subsequent pointermove scales against (distance
+ * ratio → size ratio), so the gesture always resizes relative to the
+ * size the target had when the pinch started, not the previous frame.
+ */
+interface PinchState {
+  distance: number;
+  width: number;
+  height: number;
+}
 class ResizeElement extends HTMLElement {
   public originSize?: Size | null = null;
   [key: string]: any;
@@ -185,6 +200,16 @@ class ResizePlugin {
   private scrollParent: Element | null = null;
   private onScroll: () => void;
   private activePointerId: number | null = null;
+  /**
+   * Touch pointers currently down anywhere on the overlay, keyed by
+   * pointerId. Tracked independently of `startResizePosition` (which only
+   * covers a single-pointer drag started on `.handler`) so a second finger
+   * landing anywhere on the selected media — not just the handle — can
+   * start a pinch-to-resize gesture.
+   */
+  private activeTouches: Map<number, TouchPoint> = new Map();
+  /** Non-null while exactly two touches are pinching; null otherwise. */
+  private pinchStart: PinchState | null = null;
 
   constructor(
     resizeTarget: ResizeElement,
@@ -766,6 +791,33 @@ class ResizePlugin {
   }
   startResize(e: PointerEvent) {
     const target: HTMLElement = e.target as HTMLElement;
+
+    // Track every touch pointer landing anywhere on the overlay (not just
+    // the handle) so a second finger can start a pinch-to-resize gesture
+    // from any point over the selected media, the same way it would in a
+    // native photo app.
+    if (e.pointerType === "touch") {
+      this.activeTouches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (this.activeTouches.size === 2) {
+        // A second finger just landed: hand off from any single-pointer
+        // handle drag in progress to the pinch gesture instead.
+        this.startResizePosition = null;
+        const [a, b] = this.activeTouches.values();
+        this.pinchStart = {
+          distance: Math.hypot(b.x - a.x, b.y - a.y),
+          width: this.resizeTarget.clientWidth,
+          height: this.resizeTarget.clientHeight,
+        };
+        this.options?.onResizeStart?.(this.resizeTarget);
+        return;
+      }
+      if (this.activeTouches.size > 2) {
+        // A third+ finger doesn't change anything; keep pinching from the
+        // original two.
+        return;
+      }
+    }
+
     // `button === 0` matches both the primary mouse button and the primary
     // contact point for touch/pen pointers (their `button` is 0 on
     // pointerdown), so this single check replaces the old mouse-only
@@ -790,8 +842,21 @@ class ResizePlugin {
     }
   }
   endResize(e?: PointerEvent) {
-    const wasResizing = this.startResizePosition !== null;
+    if (e && e.pointerType === "touch") {
+      this.activeTouches.delete(e.pointerId);
+    }
+
+    const wasSingleDrag = this.startResizePosition !== null;
+    // A pinch ends as soon as fewer than two fingers remain, even if one
+    // finger is still touching down — matching how native pinch gestures
+    // behave (lifting either finger stops the gesture).
+    const wasPinch = this.pinchStart !== null && this.activeTouches.size < 2;
+
     this.startResizePosition = null;
+    if (wasPinch) {
+      this.pinchStart = null;
+    }
+
     if (
       e &&
       this.activePointerId !== null &&
@@ -805,13 +870,36 @@ class ResizePlugin {
       }
     }
     this.activePointerId = null;
-    if (wasResizing) {
+    if (wasSingleDrag || wasPinch) {
       this._syncPersistence();
       this.options?.onResizeEnd?.(this.resizeTarget);
     }
     this.options?.onChange?.(this.resizeTarget);
   }
   resizing(e: PointerEvent) {
+    if (e.pointerType === "touch" && this.activeTouches.has(e.pointerId)) {
+      this.activeTouches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    }
+
+    if (this.pinchStart && this.activeTouches.size >= 2) {
+      const [a, b] = this.activeTouches.values();
+      const distance = Math.hypot(b.x - a.x, b.y - a.y);
+      // Guard against a division by (near) zero if both fingers landed on
+      // the exact same point.
+      const scale = this.pinchStart.distance > 0
+        ? distance / this.pinchStart.distance
+        : 1;
+      const clamped = this._clampSize(
+        this.pinchStart.width * scale,
+        this.pinchStart.height * scale
+      );
+      this.resizeTarget.style.setProperty("width", clamped.width + "px");
+      this.resizeTarget.style.setProperty("height", clamped.height + "px");
+      this.positionResizerToTarget(this.resizeTarget);
+      this.options?.onResize?.(this.resizeTarget, this._buildChangeEvent());
+      return;
+    }
+
     if (!this.startResizePosition) return;
 
     const deltaX: number = e.clientX - this.startResizePosition.left;
@@ -842,6 +930,8 @@ class ResizePlugin {
     this.scrollParent?.removeEventListener("scroll", this.onScroll);
     this.scrollParent = null;
     this.resizer = null;
+    this.activeTouches.clear();
+    this.pinchStart = null;
   }
 
   /**

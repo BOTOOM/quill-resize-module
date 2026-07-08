@@ -2,6 +2,10 @@
   position: absolute;
   border: 1px dashed #fff;
   background-color: rgba(0, 0, 0, 0.5);
+  /* Prevents the browser from treating a two-finger touch anywhere over
+     the selected media (not just the handle) as a native pinch-zoom/pan
+     gesture, so it can drive pinch-to-resize instead. */
+  touch-action: none;
   /* .handler and .btn are real <button> elements (for native keyboard
      activation/focusability), which come with browser default chrome
      (padding, border, background, font). Reset that here; the more

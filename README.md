@@ -425,7 +425,13 @@ When the overlay activates, focus moves to the resize handle automatically:
 | `Escape` | Close the overlay |
 
 Touch and pen input are supported through Pointer Events, and the resize
-handle has an enlarged (invisible) hit area for touch screens.
+handle has an enlarged (invisible) hit area for touch screens. On touch
+devices, the whole selected media area also supports **pinch-to-resize**:
+placing a second finger anywhere on the overlay and spreading or pinching
+scales width and height together, proportionally to how far apart the
+fingers move — no need to land precisely on the small handle. Pinching
+cancels a single-finger handle drag in progress, and respects the same
+`constraints` (min/max width/height) as every other resize gesture.
 
 ## 🐛 Bug Fixes & Security
 

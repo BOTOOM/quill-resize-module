@@ -238,10 +238,45 @@ rapido. En CSS se agrega `touch-action: none` al handle para evitar que el
 scroll nativo compita con el gesto de resize, y un `::before` invisible de
 40x40px amplia el area tactil real sin cambiar el tamano visual del
 handle (por debajo del minimo recomendado de ~44px si se usara solo el
-tamano visible de 10x10px). Pinch-to-resize se deja fuera de este alcance
-(anotado como posible extension futura, no bloquea el resto del plan).
+tamano visible de 10x10px).
 Cubierto por 3 tests nuevos (touch pointer, pointercancel cleanup,
 pointer capture) mas la migracion de los tests de drag existentes.
+
+> ✅ **Pinch-to-resize implementado** (seguimiento posterior, verificado
+> con touch real simulado via Chrome DevTools Protocol, no solo eventos
+> sinteticos): `ResizePlugin` ahora rastrea cada puntero tactil que
+> aterriza en cualquier punto del overlay (no solo en el handle) en un
+> `Map<pointerId, {x,y}>`. Cuando aterriza un segundo dedo, se cancela
+> cualquier arrastre de un solo dedo en curso sobre el handle y arranca
+> un gesto de pinch: se guarda la distancia inicial entre los dos puntos
+> junto con el ancho/alto actuales, y cada `pointermove` recalcula la
+> distancia y escala ambas dimensiones proporcionalmente
+> (`nuevoAncho = anchoInicial * distanciaActual / distanciaInicial`),
+> pasando por el mismo `_clampSize` (respeta `minWidth/maxWidth/
+> minHeight/maxHeight`) que el resto de gestos. Al levantar cualquiera de
+> los dos dedos el gesto termina (igual que un pinch nativo), disparando
+> `onResizeEnd`/persistencia una sola vez; el dedo restante, si sigue
+> tocando, ya no sigue redimensionando. Se agrego `touch-action: none` en
+> `#editor-resizer` (el overlay completo, no solo `.handler`) para que un
+> pinch de dos dedos sobre la imagen seleccionada no dispare el
+> zoom/pan nativo de la pagina. Verificado end-to-end con Playwright +
+> CDP `Input.dispatchTouchEvent` contra el build real servido localmente
+> (no contra jsdom): un pinch de separacion 9x escalo el ancho de 342px a
+> 3078px exactamente, y un pinch de cierre 0.5x lo redujo a la mitad;
+> soltar un dedo detiene el gesto correctamente y el overlay sigue
+> operativo despues. Cubierto por 5 tests nuevos (escalado proporcional,
+> clamping a constraints, fin de gesto al levantar un dedo, cancelacion
+> del arrastre de un solo dedo al iniciar el pinch, y proteccion ante
+> division por cero si ambos dedos caen en el mismo punto).
+>
+> Nota importante descubierta durante la verificacion manual: al probar
+> el touch en un navegador real, se detecto que el `demo/index.html`
+> publicado en jsdelivr/CDN sigue siendo una version **anterior** a esta
+> migracion a Pointer Events (usa `mousedown`, no `pointerdown`) — el
+> paquete con estas mejoras aun no ha sido publicado a npm. Si al probar
+> la demo en un telefono real el arrastre tactil no responde, verificar
+> primero si se esta cargando la version publicada (CDN) en vez del
+> build local (`../dist/quill-resize-module.js`, tras `npm run build`).
 
 ### 5. Accesibilidad y UX de teclado
 
