@@ -31,6 +31,36 @@ module.exports = [
     ]
   },
   {
+    // Real ES module build (native `export`/`import` syntax), so Node's
+    // ESM loader and modern bundlers (Vite, Webpack 5, Rollup) can resolve
+    // this package's "import" condition to actual ESM instead of a UMD
+    // bundle wrapped in a CommonJS/AMD/global detector. The ".mjs"
+    // extension makes Node treat it as ESM unambiguously, regardless of
+    // this package's (CommonJS-default) "type" field.
+    input: "src/main.ts",
+    output: {
+      file: "dist/quill-resize-module.esm.mjs",
+      format: "es",
+      sourcemap: true
+    },
+    plugins: [
+      nodeResolve({
+        preferBuiltins: false,
+        browser: true
+      }),
+      commonjs(),
+      typescript({
+        tsconfig: "./tsconfig.rollup.json",
+        declaration: false,
+        sourceMap: true
+      }),
+      postcss({
+        inject: true,
+        minimize: false
+      })
+    ]
+  },
+  {
     input: "src/main.ts",
     output: {
       name: "QuillResizeModule",

@@ -17,6 +17,8 @@ dist/*.ts
 
 # Configuration files
 .eslintrc*
+eslint.config.js
+vitest.config.ts
 .prettierrc*
 .editorconfig
 

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quill Resize Module - Vanilla JS Example</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="editor"></div>
+
+    <!-- Quill must load before this module, which registers itself as
+         `window.QuillResizeModule` (UMD global). -->
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@botom/quill-resize-module/dist/quill-resize-module.min.js"></script>
+    <script>
+      Quill.register("modules/resize", window.QuillResizeModule);
+
+      const quill = new Quill("#editor", {
+        theme: "snow",
+        modules: {
+          toolbar: ["bold", "italic", "underline", "image", "video"],
+          resize: {
+            showSize: true,
+            constraints: { maxWidth: 800, lockAspectRatio: true },
+          },
+        },
+      });
+    </script>
+  </body>
+</html>

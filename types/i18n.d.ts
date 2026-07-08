@@ -4,6 +4,15 @@ declare class Locale {
     floatRight?: string;
     center?: string;
     restore?: string;
+    inputTip?: string;
+    toolbarLabel?: string;
+    handlerLabel?: string;
+    editAttributesLabel?: string;
+    attributesPanelLabel?: string;
+    altTextLabel?: string;
+    titleTextLabel?: string;
+    saveLabel?: string;
+    cancelLabel?: string;
 }
 declare class I18n {
     config: Locale;

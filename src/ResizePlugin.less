@@ -2,6 +2,26 @@
   position: absolute;
   border: 1px dashed #fff;
   background-color: rgba(0, 0, 0, 0.5);
+  /* Prevents the browser from treating a two-finger touch anywhere over
+     the selected media (not just the handle) as a native pinch-zoom/pan
+     gesture, so it can drive pinch-to-resize instead. */
+  touch-action: none;
+  /* .handler and .btn are real <button> elements (for native keyboard
+     activation/focusability), which come with browser default chrome
+     (padding, border, background, font). Reset that here; the more
+     specific .handler/.btn rules below win the cascade and re-apply the
+     actual look, so this is purely an appearance reset, not a behavior
+     change. `all: unset` also clears the default focus outline, so it is
+     restored explicitly via :focus-visible. */
+  button {
+    all: unset;
+    box-sizing: border-box;
+    cursor: pointer;
+    &:focus-visible {
+      outline: 2px solid #4f9eff;
+      outline-offset: 2px;
+    }
+  }
   .handler {
     position: absolute;
     right: -5px;
@@ -12,6 +32,39 @@
     background-color: rgba(255, 255, 255, 0.8);
     cursor: nwse-resize;
     user-select: none;
+    /* Prevent the browser's native touch scrolling/panning gestures from
+       competing with a pointer-based resize drag on touch screens. */
+    touch-action: none;
+    /* The visible handle is intentionally small so it doesn't obscure the
+       media being resized, but a 10x10px target is far below the ~44px
+       minimum recommended for touch input. This invisible pseudo-element
+       enlarges the actual hit/pointer area without changing how the
+       handle looks; pointer/touch events anywhere within it still report
+       `.handler` as their target since pseudo-elements aren't
+       independently targetable. */
+    &::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 40px;
+      height: 40px;
+      transform: translate(-50%, -50%);
+    }
+  }
+  .size-label {
+    position: absolute;
+    left: 50%;
+    bottom: -1.6em;
+    transform: translateX(-50%);
+    padding: 0.1em 0.5em;
+    border-radius: 3px;
+    background-color: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    font-size: 0.75em;
+    white-space: nowrap;
+    user-select: none;
+    pointer-events: none;
   }
   .toolbar {
     position: absolute;
@@ -182,5 +235,50 @@
     box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
     transform: translateX(-50%);
     font-size: 0.8em; /* Smaller font for tight spaces */
+  }
+  .attributes-panel {
+    position: absolute;
+    top: -3em;
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 220px;
+    padding: 0.6em;
+    border: 1px solid #fff;
+    border-radius: 3px;
+    background-color: #fff;
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+
+    .field {
+      display: block;
+      margin-bottom: 0.4em;
+      font-size: 0.8em;
+      color: rgba(0, 0, 0, 0.65);
+
+      input {
+        display: block;
+        width: 100%;
+        margin-top: 0.2em;
+        box-sizing: border-box;
+        border: 1px solid #ddd;
+        border-radius: 2px;
+        padding: 0.3em;
+        font-size: 1em;
+      }
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.4em;
+
+      .btn {
+        padding: 0.2em 0.6em;
+        border: 1px solid #aaa;
+        border-radius: 3px;
+        font-size: 0.8em;
+        color: rgba(0, 0, 0, 0.65);
+      }
+    }
   }
 }

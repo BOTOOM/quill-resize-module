@@ -9,14 +9,48 @@ A modern, secure module for the Quill rich text editor that allows you to resize
 
 ## ✨ Features
 
-- 🖼️ **Image Resizing** - Resize images with drag handles
-- 🎥 **Video Resizing** - Resize videos maintaining aspect ratio
+- 🖼️ **Image & GIF Resizing** - Resize images and animated GIFs with drag handles
+- 🎥 **Video Resizing** - Resize videos (and iframes) maintaining aspect ratio
 - 📱 **Responsive Design** - Works on all devices
+- 👆 **Touch, Pointer & Pinch Support** - Unified pointer events for mouse, touch, and pen, plus native two-finger pinch-to-resize on touch screens
+- ⌨️ **Keyboard Accessible** - Real `<button>` controls, focus management, and keyboard shortcuts
+- 💾 **Persistent Sizing** - Width, height, and alignment survive `getContents()`/`setContents()` round-trips, copy-paste, and page reloads
 - 🌐 **Multi-language Support** - Customizable locale options
-- 🔒 **Security First** - Zero vulnerabilities, modern dependencies
-- ⚡ **Performance Optimized** - Lightweight and fast
+- 🔒 **Security First** - Zero vulnerabilities, modern dependencies, audited regularly
+- ⚡ **Performance Optimized** - Lightweight (≈7 kB brotli) and fast
 - 🎨 **Customizable Toolbar** - Show/hide alignment and size tools
 - 📏 **Size Display** - Optional size indicator
+- 🔔 **Typed Callbacks** - `onSelect`, `onResizeStart`, `onResize`, `onResizeEnd`, `onAlignChange`
+- 📐 **Resize Constraints** - min/max width/height, aspect-ratio locking (globally or per embed tag), and `%`/`px` size modes with configurable presets
+- 🧩 **Custom Embeds** - configure which tags trigger the overlay (`embedTags`) or resolve arbitrary wrapper elements (`resolveEmbed`) without forking
+- ✏️ **Media Attributes** - edit `alt` text and `title` from the toolbar, persisted through Quill's Delta model
+- ⬆️ **Upload Hooks & Compression** - intercept pasted/dropped images with `onImageUpload` to send them to your own upload pipeline, with optional client-side downscaling via `imageCompression`
+- 📦 **Modern Packaging** - real ESM (`.mjs`) and UMD builds with correct `exports`/`module` resolution, plus first-class TypeScript types
+- 🧪 **Framework Ready** - integration guides for Vanilla JS, React, Next.js, Vue, and Angular
+
+## 🆕 What's New in v2.1
+
+- **Pinch-to-resize on touch devices** - place a second finger anywhere on
+  the selected image/video and pinch or spread to resize proportionally,
+  no need to target the small handle.
+- **More reliable touch dragging** - the resize handle now uses Pointer
+  Events (mouse, touch, and pen unified) with pointer capture and an
+  enlarged invisible hit area.
+- **Native Quill persistence** - width/height/alignment are now backed by
+  registered Quill formats, so they survive Delta serialization instead
+  of relying only on inline styles.
+- **Upload hooks with optional compression** - wire `onImageUpload` to
+  intercept pasted/dropped images before they're inserted.
+- **Custom embed support** - resize arbitrary wrapper elements or extra
+  tags via `resolveEmbed`/`embedTags`, without forking the library.
+- **Keyboard accessibility** - arrow-key resizing, focus management, and
+  screen-reader-friendly controls.
+- **Dependency audit** - vulnerabilities reduced from 23 to 1 (a
+  documented, unfixable-upstream low-severity issue), with 100% of test
+  and lint tooling kept current.
+- **Real ESM build** - `dist/quill-resize-module.esm.mjs` fixes a
+  previous packaging bug where `import` resolved to a UMD bundle instead
+  of true ESM.
 
 ## 🚀 Demo
 
@@ -24,11 +58,27 @@ A modern, secure module for the Quill rich text editor that allows you to resize
 
 ![Demo](https://raw.githubusercontent.com/BOTOOM/quill-resize-module/master/demo/demo.gif)
 
+Framework-specific integration examples (Vanilla, React, Next.js, Vue,
+Angular) with lifecycle/cleanup guidance are in
+[`examples/`](./examples/README.md).
+
 ## 📦 Installation
 
 ```bash
 npm install @botom/quill-resize-module
 ```
+
+This package ships three builds so both Node/bundler resolution and
+plain `<script>` usage work correctly:
+
+| Consumer | File | Format |
+|----------|------|--------|
+| Bundlers/Node (`import`) | `dist/quill-resize-module.esm.mjs` | Real ES module (`export`/`import`) |
+| Bundlers/Node (`require`), CDN `<script>` | `dist/quill-resize-module.min.js` | UMD, minified |
+| Legacy `<script>` (unminified/debug) | `dist/quill-resize-module.js` | UMD |
+
+The package's `exports` map resolves `import`/`require` automatically —
+you normally don't need to reference these paths directly.
 
 ## 🛠️ Usage
 
@@ -93,10 +143,52 @@ const quill = new Quill("#editor", {
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `showToolbar` | boolean | `true` | Show/hide the toolbar |
-| `showSize` | boolean | `false` | Display current dimensions |
+| `showSize` | boolean | `false` | Display current dimensions as a floating label |
 | `locale` | object | `{}` | Custom language strings |
 | `toolbar.sizeTools` | boolean | `true` | Show size adjustment tools |
-| `toolbar.alingTools` | boolean | `true` | Show alignment tools |
+| `toolbar.alignTools` | boolean | `true` | Show alignment tools |
+| `toolbar.sizePresets` | number[] | `[100, 50]` | Percentages rendered as quick-size preset buttons |
+| `toolbar.sizeUnit` | `"%"` \| `"px"` | `"%"` | Unit applied by preset buttons and the width input (see [Resize Constraints & Modes](#-resize-constraints--modes)) |
+| `toolbar.attributesTool` | boolean | `true` | Show the "edit attributes" button that opens the alt/title panel (see [Media Attributes](#️-media-attributes-alt-text--title)) |
+| `constraints` | `ResizeConstraints` | `{}` | Min/max width & height and aspect-ratio locking, applied to every target (see below) |
+| `constraintsByTag` | object | `{}` | Per-tag override of `constraints` (e.g. `{ img: {...}, video: {...}, myEmbed: {...} }`) |
+| `embedTags` | string[] | `["img", "video"]` | Tags that trigger the resize overlay on click. **Fully replaces** the default list — set it to add custom tags (e.g. `["img", "video", "canvas"]`) |
+| `resolveEmbed` | function | `undefined` | Custom resolver `(clickedTarget, event) => HTMLElement \| null` to support arbitrary wrapper elements (see [Custom Embeds](#-custom-embeds)) |
+| `onImageUpload` | function | `undefined` | `(file: File) => Promise<string> \| string` called for each pasted/dropped image; its resolved URL is inserted into the editor (see [Upload Hooks & Compression](#️-upload-hooks--compression)) |
+| `imageCompression` | `ImageCompressionOptions \| false` | `undefined` | Optional client-side downscaling applied before `onImageUpload`. Only takes effect when `onImageUpload` is set |
+
+> `toolbar.alingTools` (the original, misspelled name) still works as a
+> deprecated alias for `toolbar.alignTools`, but new code should use the
+> corrected name.
+
+
+### Callbacks
+
+| Callback | Signature | Fires when |
+|----------|-----------|------------|
+| `onChange` | `(element: HTMLElement) => void` | After any change (drag, keyboard resize, toolbar click/input). Kept for backward compatibility. |
+| `onSelect` | `(element: HTMLElement) => void` | Once, when the overlay activates for a new img/video/iframe target. |
+| `onResizeStart` | `(element: HTMLElement) => void` | When a resize gesture begins (pointer drag, keyboard arrow step, or a toolbar width action). |
+| `onResize` | `(element: HTMLElement, event: ResizeChangeEvent) => void` | During a resize gesture. Fires on every `pointermove` for drags; once with the final size for keyboard/toolbar-driven resizes. |
+| `onResizeEnd` | `(element: HTMLElement) => void` | When a resize gesture ends. |
+| `onAlignChange` | `(element: HTMLElement, align: "left" \| "center" \| "right" \| null) => void` | When alignment changes via the toolbar. |
+| `onAttributesChange` | `(element: HTMLElement, attrs: ResizeMediaAttributes) => void` | When `alt`/`title` are saved through the attributes panel. |
+
+`ResizeChangeEvent` is `{ target: HTMLElement; width: number; height: number; align: "left" | "center" | "right" | null }`.
+
+```typescript
+import type { QuillResizeModuleOptions, ResizeChangeEvent } from "@botom/quill-resize-module";
+
+const options: QuillResizeModuleOptions = {
+  onSelect: (element) => console.log("selected", element),
+  onResizeStart: (element) => console.log("resize start", element),
+  onResize: (element, event: ResizeChangeEvent) => {
+    console.log(`resizing to ${event.width}x${event.height}`, event.align);
+  },
+  onResizeEnd: (element) => console.log("resize end", element),
+  onAlignChange: (element, align) => console.log("align changed", align),
+};
+```
 
 ### Locale Configuration
 
@@ -119,12 +211,12 @@ const quill = new Quill("#editor", {
 ### Toolbar Customization
 
 ```javascript
-// Hide alignment tools (for newer Quill versions)
+// Hide alignment tools (e.g. for content pipelines that don't need it)
 const quill = new Quill("#editor", {
   modules: {
     resize: {
       toolbar: {
-        alingTools: false,  // Hide alignment
+        alignTools: false, // Hide alignment
         sizeTools: true,   // Keep size tools
       },
     },
@@ -132,22 +224,241 @@ const quill = new Quill("#editor", {
 });
 ```
 
-## 🔧 Advanced Configuration
+## ✏️ Media Attributes (Alt Text & Title)
 
-For the latest versions of Quill that don't support the `style` attribute:
+Every resizable target gets an "edit attributes" button in the toolbar
+(hide it with `toolbar.attributesTool: false`) that opens a small panel
+for editing `alt` text and `title`:
+
+```javascript
+const quill = new Quill("#editor", {
+  modules: {
+    resize: {
+      onAttributesChange: (element, { alt, title }) => {
+        console.log("attributes saved", { alt, title });
+      },
+    },
+  },
+});
+```
+
+- The **Alt text** field is only shown for `<img>` targets, matching
+  native HTML semantics — videos and iframes don't have an `alt`
+  attribute.
+- The **Title** field is available for any target and sets a plain HTML
+  `title` attribute (shown as a native tooltip by the browser).
+- Both fields are saved into Quill's Delta model (`alt`/`title` Delta
+  attributes) when a live Quill instance is available, so they survive
+  `getContents()`/`setContents()` round trips exactly like width, height,
+  and alignment.
+- Pressing **Escape** while focused inside the panel closes just the
+  panel, leaving the resize overlay open.
+
+## 📐 Resize Constraints & Modes
+
+Control the bounds and behavior of every resize gesture (pointer drag,
+keyboard arrow steps, and `px`-unit toolbar actions):
+
+```javascript
+const quill = new Quill("#editor", {
+  modules: {
+    resize: {
+      constraints: {
+        minWidth: 80,
+        maxWidth: 800,
+        minHeight: 60,
+        maxHeight: 600,
+        lockAspectRatio: true, // always preserve ratio, without needing Alt
+      },
+      // Override constraints for specific embed tags — per-tag fields win
+      // over the matching field in the global `constraints` above.
+      constraintsByTag: {
+        video: { lockAspectRatio: true },
+        iframe: { lockAspectRatio: true, minWidth: 320 },
+      },
+    },
+  },
+});
+```
+
+> An absolute 30px minimum always applies as a safety floor, even if a
+> smaller `minWidth`/`minHeight` is configured.
+
+Toggle between relative (`%`) and absolute (`px`) sizing for the toolbar's
+preset buttons and width input, and customize which percentages are
+offered as presets:
 
 ```javascript
 const quill = new Quill("#editor", {
   modules: {
     resize: {
       toolbar: {
-        alingTools: false,  // Disable alignment tools
+        sizePresets: [100, 75, 50, 25], // default is [100, 50]
+        sizeUnit: "px", // default is "%"; presets/input become fixed px sizes
+      },
+    },
+  },
+});
+```
+
+In `"%"` mode (the default) the preset buttons/input set a relative
+`width: N%;`, so the embed keeps resizing with its container. In `"px"`
+mode they compute an absolute width from the embed's original size
+(e.g. 50% of a 200px-wide image becomes `width: 100px;`) and set
+`height: auto;`, so the embed keeps a fixed size regardless of the
+container's width. `minWidth`/`maxWidth` constraints are enforced on
+`px`-mode preset/input changes.
+
+## 🧩 Custom Embeds
+
+By default, clicking an `img` or `video` attaches the resize overlay
+(iframes — e.g. YouTube embeds — are handled separately via focus
+tracking, since clicks inside cross-origin iframe content don't bubble to
+the parent document). You can extend or completely replace this behavior
+without forking the library:
+
+```javascript
+const quill = new Quill("#editor", {
+  modules: {
+    resize: {
+      // Fully replaces the default ["img", "video"] list — include every
+      // tag you want to be resizable.
+      embedTags: ["img", "video", "canvas", "my-custom-embed"],
+    },
+  },
+});
+```
+
+For embeds that aren't a single element (e.g. a wrapper `<div>` or
+`<figure>` around an inner element), use `resolveEmbed` to resolve the
+click to the element that should actually be resized:
+
+```javascript
+const quill = new Quill("#editor", {
+  modules: {
+    resize: {
+      resolveEmbed(clickedTarget, event) {
+        // Clicking anywhere inside a ".chart-embed" wrapper resizes the
+        // wrapper itself, not the element that was clicked.
+        return clickedTarget.closest(".chart-embed");
+      },
+    },
+  },
+});
+```
+
+`resolveEmbed` is checked first; if it returns `null`/`undefined`, the
+module falls back to `embedTags`-based matching on the clicked element's
+own tag name. Both `constraintsByTag` and persistence through Quill's
+Delta model (for blot-backed elements) work with custom embeds exactly
+as they do for `img`/`video`.
+
+## ⬆️ Upload Hooks & Compression
+
+By default, pasting or dropping an image into the editor is handled by
+Quill/the browser's native clipboard behavior (usually inlined as a
+`data:` URL). Setting `onImageUpload` lets you intercept that flow and
+send the file to your own upload pipeline instead — the module inserts
+whatever URL you resolve:
+
+```javascript
+const quill = new Quill("#editor", {
+  modules: {
+    resize: {
+      async onImageUpload(file) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        const { url } = await response.json();
+        return url;
+      },
+    },
+  },
+});
+```
+
+- `onImageUpload` is only invoked for **image** files pasted/dropped
+  directly into the editor; non-image files and drag/drop of text or
+  other content are left untouched.
+- If `onImageUpload` is **not** configured, paste/drop behavior is
+  completely unchanged — this feature is fully opt-in and backward
+  compatible.
+- Returning a falsy value (e.g. `undefined` or an empty string) skips
+  insertion for that file, which is useful if the upload fails and you
+  want to show your own error UI instead.
+- Multiple pasted/dropped files are uploaded and inserted in order.
+
+Optionally, downscale images client-side before they reach
+`onImageUpload` with `imageCompression`:
+
+```javascript
+const quill = new Quill("#editor", {
+  modules: {
+    resize: {
+      onImageUpload /* ... */,
+      imageCompression: {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        mimeType: "image/jpeg",
+        quality: 0.8,
+      },
+    },
+  },
+});
+```
+
+`imageCompression` uses an in-memory `<canvas>` to resize/re-encode the
+image and never upscales images that are already smaller than the
+configured bounds. It only has an effect when paired with
+`onImageUpload` (the paste/drop interceptor doesn't activate otherwise),
+and it degrades gracefully — if canvas 2D rendering isn't available in
+the current environment, or the compression step throws for any
+reason, the original file is passed through unchanged instead of
+failing the upload.
+
+## 🔧 Advanced Configuration
+
+Combine toolbar visibility with the live size label:
+
+```javascript
+const quill = new Quill("#editor", {
+  modules: {
+    resize: {
+      toolbar: {
+        alignTools: false, // Disable alignment tools
       },
       showSize: true,
     },
   },
 });
 ```
+
+## ♿ Accessibility & Keyboard Shortcuts
+
+The resize handle and every toolbar control are real `<button>` elements
+(not anchors), so they are reachable and operable with a keyboard once
+the overlay is active, and are announced correctly by screen readers.
+When the overlay activates, focus moves to the resize handle automatically:
+
+| Shortcut | Action |
+|----------|--------|
+| Arrow keys | Resize by 1px |
+| Shift + Arrow keys | Resize by 10px |
+| Alt + Arrow keys | Resize while keeping the original aspect ratio |
+| `0` | Restore the original size |
+| `Escape` | Close the overlay |
+
+Touch and pen input are supported through Pointer Events, and the resize
+handle has an enlarged (invisible) hit area for touch screens. On touch
+devices, the whole selected media area also supports **pinch-to-resize**:
+placing a second finger anywhere on the overlay and spreading or pinching
+scales width and height together, proportionally to how far apart the
+fingers move — no need to land precisely on the small handle. Pinching
+cancels a single-finger handle drag in progress, and respects the same
+`constraints` (min/max width/height) as every other resize gesture.
 
 ## 🐛 Bug Fixes & Security
 
@@ -158,8 +469,9 @@ const quill = new Quill("#editor", {
 - ✅ **Build system modernized** with Rollup v3
 
 ### Security Status
-- 🔒 **0 vulnerabilities** (npm audit)
-- 🛡️ **Modern dependencies** (no deprecated packages)
+- 🔒 **0 vulnerabilities** in production dependencies (`npm audit --omit=dev --audit-level=high`)
+- 🛡️ **Modern dependencies** — dev tooling vulnerabilities are tracked and remediated conservatively (see [`MEJORAS_LIBRERIA.md`](./MEJORAS_LIBRERIA.md#auditoria-y-remediacion-de-dependencias))
+- ⚠️ One known **low-severity** issue in `quill` itself (an XSS in its HTML export feature, [GHSA-v3m3-f69x-jf25](https://github.com/advisories/GHSA-v3m3-f69x-jf25)), affecting the latest published `quill` release with no fix available yet — tracked upstream, not introduced by this module
 - ✅ **CI/CD security** with Node.js 20.x
 
 ## 📱 Browser Support
@@ -170,6 +482,16 @@ const quill = new Quill("#editor", {
 | Firefox | 65+ |
 | Safari | 12+ |
 | Edge | 79+ |
+
+## 🧬 Framework Compatibility
+
+The module has no framework dependency of its own — it only needs a
+Quill 2.x instance. Like Quill itself, it reads `document`/`HTMLElement`
+at construction time, so it cannot run during server-side rendering; in
+SSR frameworks (Next.js, Nuxt, Angular Universal, etc.) always create the
+editor on the client only. See [`examples/`](./examples/README.md) for
+worked Vanilla, React, Next.js, Vue, and Angular integrations, including
+SSR guidance and cleanup/`destroy()` lifecycle wiring.
 
 ## 🤝 Contributing
 

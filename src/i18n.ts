@@ -5,6 +5,14 @@ class Locale {
   center?: string;
   restore?: string;
   inputTip?: string;
+  toolbarLabel?: string;
+  handlerLabel?: string;
+  editAttributesLabel?: string;
+  attributesPanelLabel?: string;
+  altTextLabel?: string;
+  titleTextLabel?: string;
+  saveLabel?: string;
+  cancelLabel?: string;
 }
 class I18n {
   config: Locale;
@@ -26,5 +34,14 @@ const defaultLocale: Locale = {
   center: "Center",
   restore: "Restore",
   inputTip: "Enter width percentage",
+  toolbarLabel: "Media resize toolbar",
+  handlerLabel:
+    "Resize handle. Use arrow keys to resize, hold Alt to keep the aspect ratio, press 0 to restore the original size, Escape to close.",
+  editAttributesLabel: "Edit alt text and title",
+  attributesPanelLabel: "Edit media attributes",
+  altTextLabel: "Alt text",
+  titleTextLabel: "Title",
+  saveLabel: "Save",
+  cancelLabel: "Cancel",
 };
 export { I18n, Locale, defaultLocale };
