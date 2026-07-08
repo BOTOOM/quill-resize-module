@@ -9,14 +9,15 @@ A modern, secure module for the Quill rich text editor that allows you to resize
 
 ## ✨ Features
 
-- 🖼️ **Image Resizing** - Resize images with drag handles
-- 🎥 **Video Resizing** - Resize videos maintaining aspect ratio
+- 🖼️ **Image & GIF Resizing** - Resize images and animated GIFs with drag handles
+- 🎥 **Video Resizing** - Resize videos (and iframes) maintaining aspect ratio
 - 📱 **Responsive Design** - Works on all devices
-- 👆 **Touch & Pointer Support** - Unified pointer events for mouse, touch, and pen
+- 👆 **Touch, Pointer & Pinch Support** - Unified pointer events for mouse, touch, and pen, plus native two-finger pinch-to-resize on touch screens
 - ⌨️ **Keyboard Accessible** - Real `<button>` controls, focus management, and keyboard shortcuts
+- 💾 **Persistent Sizing** - Width, height, and alignment survive `getContents()`/`setContents()` round-trips, copy-paste, and page reloads
 - 🌐 **Multi-language Support** - Customizable locale options
-- 🔒 **Security First** - Zero vulnerabilities, modern dependencies
-- ⚡ **Performance Optimized** - Lightweight and fast
+- 🔒 **Security First** - Zero vulnerabilities, modern dependencies, audited regularly
+- ⚡ **Performance Optimized** - Lightweight (≈7 kB brotli) and fast
 - 🎨 **Customizable Toolbar** - Show/hide alignment and size tools
 - 📏 **Size Display** - Optional size indicator
 - 🔔 **Typed Callbacks** - `onSelect`, `onResizeStart`, `onResize`, `onResizeEnd`, `onAlignChange`
@@ -24,6 +25,32 @@ A modern, secure module for the Quill rich text editor that allows you to resize
 - 🧩 **Custom Embeds** - configure which tags trigger the overlay (`embedTags`) or resolve arbitrary wrapper elements (`resolveEmbed`) without forking
 - ✏️ **Media Attributes** - edit `alt` text and `title` from the toolbar, persisted through Quill's Delta model
 - ⬆️ **Upload Hooks & Compression** - intercept pasted/dropped images with `onImageUpload` to send them to your own upload pipeline, with optional client-side downscaling via `imageCompression`
+- 📦 **Modern Packaging** - real ESM (`.mjs`) and UMD builds with correct `exports`/`module` resolution, plus first-class TypeScript types
+- 🧪 **Framework Ready** - integration guides for Vanilla JS, React, Next.js, Vue, and Angular
+
+## 🆕 What's New in v2.1
+
+- **Pinch-to-resize on touch devices** - place a second finger anywhere on
+  the selected image/video and pinch or spread to resize proportionally,
+  no need to target the small handle.
+- **More reliable touch dragging** - the resize handle now uses Pointer
+  Events (mouse, touch, and pen unified) with pointer capture and an
+  enlarged invisible hit area.
+- **Native Quill persistence** - width/height/alignment are now backed by
+  registered Quill formats, so they survive Delta serialization instead
+  of relying only on inline styles.
+- **Upload hooks with optional compression** - wire `onImageUpload` to
+  intercept pasted/dropped images before they're inserted.
+- **Custom embed support** - resize arbitrary wrapper elements or extra
+  tags via `resolveEmbed`/`embedTags`, without forking the library.
+- **Keyboard accessibility** - arrow-key resizing, focus management, and
+  screen-reader-friendly controls.
+- **Dependency audit** - vulnerabilities reduced from 23 to 1 (a
+  documented, unfixable-upstream low-severity issue), with 100% of test
+  and lint tooling kept current.
+- **Real ESM build** - `dist/quill-resize-module.esm.mjs` fixes a
+  previous packaging bug where `import` resolved to a UMD bundle instead
+  of true ESM.
 
 ## 🚀 Demo
 
