@@ -6,7 +6,7 @@ class Iframe {
 class IframeClick {
   static resolution: number = 200;
   static iframes: Array<Iframe> = [];
-  static interval: NodeJS.Timeout | null = null;
+  static interval: ReturnType<typeof setInterval> | null = null;
 
   static track(element: HTMLIFrameElement, cb: () => void) {
     const existing = this.iframes.find((item) => item.element === element);

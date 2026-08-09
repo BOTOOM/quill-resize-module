@@ -15,13 +15,12 @@
       integrity="sha384-reiVBUvj2HgLgCZalqLFSMBVD9LdtiwGyybRGCq2AfP8Rgebz5DxEnwKp4FpagKV"
       src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.min.js"
     ></script>
-    <!-- Loaded from the published npm package via jsdelivr, so the live
-         demo (deployed to GitHub Pages from ./demo only) always works
-         standalone without depending on a local copy of ../dist. When
-         testing local, unreleased changes, run `npm run build` and
-         temporarily point this at "../dist/quill-resize-module.js"
-         instead. -->
-    <script src="https://cdn.jsdelivr.net/npm/@botom/quill-resize-module/dist/quill-resize-module.min.js"></script>
+    <!-- Releases copy the just-built bundle here; the CDN fallback keeps a
+         fresh clone's demo usable before a build. -->
+    <script
+      src="./quill-resize-module.min.js"
+      onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/@botom/quill-resize-module/dist/quill-resize-module.min.js'"
+    ></script>
   </head>
   <body>
     <div id="editor">
