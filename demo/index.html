@@ -15,12 +15,6 @@
       integrity="sha384-reiVBUvj2HgLgCZalqLFSMBVD9LdtiwGyybRGCq2AfP8Rgebz5DxEnwKp4FpagKV"
       src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.min.js"
     ></script>
-    <!-- Releases copy the just-built bundle here; the CDN fallback keeps a
-         fresh clone's demo usable before a build. -->
-    <script
-      src="./quill-resize-module.min.js"
-      onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/@botom/quill-resize-module/dist/quill-resize-module.min.js'"
-    ></script>
   </head>
   <body>
     <div id="editor">
@@ -35,40 +29,54 @@
     </div>
   </body>
   <script>
-    Quill.register("modules/resize", window.QuillResizeModule);
+    // Releases copy the built bundle here; a fresh clone uses the CDN fallback.
+    function initializeDemo() {
+      Quill.register("modules/resize", window.QuillResizeModule);
 
-    var toolbarOptions = [
-      "bold",
-      "italic",
-      "underline",
-      "strike",
-      "image",
-      "video"
-    ];
-    var quill = new Quill("#editor", {
-      theme: "snow",
-      modules: {
-        toolbar: toolbarOptions,
-        resize: {
-          showSize: true,
-          // showToolbar: false,
-          toolbar: {
-            // alignTools: false,
-            attributesTool: true,
-          },
-          // Demonstrates the alt/title attributes panel added in the
-          // Media Attributes feature (see README "Media Attributes").
-          locale: {},
-          // Demonstrates the opt-in upload hook: replace this with a real
-          // upload call (e.g. `fetch("/api/upload", { method: "POST", body: formData })`)
-          // to send pasted/dropped images to your own backend instead of
-          // Quill's default base64 inlining. See README "Upload Hooks &
-          // Compression" for details.
-          onImageUpload: async function (file) {
-            return URL.createObjectURL(file);
-          },
+      var toolbarOptions = [
+        "bold",
+        "italic",
+        "underline",
+        "strike",
+        "image",
+        "video"
+      ];
+      var quill = new Quill("#editor", {
+        theme: "snow",
+        modules: {
+          toolbar: toolbarOptions,
+          resize: {
+            showSize: true,
+            // showToolbar: false,
+            toolbar: {
+              // alignTools: false,
+              attributesTool: true,
+            },
+            // Demonstrates the alt/title attributes panel added in the
+            // Media Attributes feature (see README "Media Attributes").
+            locale: {},
+            // Demonstrates the opt-in upload hook: replace this with a real
+            // upload call (e.g. `fetch("/api/upload", { method: "POST", body: formData })`)
+            // to send pasted/dropped images to your own backend instead of
+            // Quill's default base64 inlining. See README "Upload Hooks &
+            // Compression" for details.
+            onImageUpload: async function (file) {
+              return URL.createObjectURL(file);
+            },
+          }
         }
-      }
-    });
+      });
+    }
+
+    var resizeScript = document.createElement("script");
+    resizeScript.src = "./quill-resize-module.min.js";
+    resizeScript.onload = initializeDemo;
+    resizeScript.onerror = function () {
+      var fallbackScript = document.createElement("script");
+      fallbackScript.src = "https://cdn.jsdelivr.net/npm/@botom/quill-resize-module/dist/quill-resize-module.min.js";
+      fallbackScript.onload = initializeDemo;
+      document.head.appendChild(fallbackScript);
+    };
+    document.head.appendChild(resizeScript);
   </script>
 </html>
