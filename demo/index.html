@@ -29,7 +29,8 @@
     </div>
   </body>
   <script>
-    // Releases copy the built bundle here; a fresh clone uses the CDN fallback.
+    // Releases copy the built bundle here; a fresh clone uses this pinned CDN
+    // fallback. Bump its version and hash when showcasing a newer release.
     function initializeDemo() {
       Quill.register("modules/resize", window.QuillResizeModule);
 
@@ -73,7 +74,9 @@
     resizeScript.onload = initializeDemo;
     resizeScript.onerror = function () {
       var fallbackScript = document.createElement("script");
-      fallbackScript.src = "https://cdn.jsdelivr.net/npm/@botom/quill-resize-module/dist/quill-resize-module.min.js";
+      fallbackScript.src = "https://cdn.jsdelivr.net/npm/@botom/quill-resize-module@2.2.0/dist/quill-resize-module.min.js";
+      fallbackScript.integrity = "sha384-X1b36yW8B3/nULtrn04emgsUiJQDf0xiCEFdcsbfRrlVujUs82fCCO+/iXr6EV5n";
+      fallbackScript.crossOrigin = "anonymous";
       fallbackScript.onload = initializeDemo;
       document.head.appendChild(fallbackScript);
     };
