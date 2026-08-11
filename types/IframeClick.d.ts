@@ -7,7 +7,7 @@ declare class Iframe {
 declare class IframeClick {
     static resolution: number;
     static iframes: Array<Iframe>;
-    static interval: NodeJS.Timeout | null;
+    static interval: ReturnType<typeof setInterval> | null;
     static track(element: HTMLIFrameElement, cb: () => void): void;
     /**
      * Stops tracking a single iframe (e.g. it was removed from the DOM or its

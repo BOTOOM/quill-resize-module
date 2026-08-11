@@ -68,6 +68,21 @@ Angular) with lifecycle/cleanup guidance are in
 npm install @botom/quill-resize-module
 ```
 
+Or with pnpm:
+
+```bash
+pnpm add @botom/quill-resize-module
+```
+
+With Yarn, use `yarn add @botom/quill-resize-module`. `quill` is a peer
+dependency, so install it in your application as well:
+
+```bash
+npm install quill
+# or: pnpm add quill
+# or: yarn add quill
+```
+
 This package ships three builds so both Node/bundler resolution and
 plain `<script>` usage work correctly:
 
@@ -519,8 +534,10 @@ This project follows [Conventional Commits](https://www.conventionalcommits.org/
 git clone https://github.com/BOTOOM/quill-resize-module.git
 cd quill-resize-module
 
-# Install dependencies
+# Install dependencies (choose one)
 npm install
+# pnpm install
+# yarn install
 
 # Start development
 npm run dev

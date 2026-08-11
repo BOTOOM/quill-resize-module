@@ -72,12 +72,16 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Prepare demo bundle
+        run: cp dist/quill-resize-module.min.js demo/quill-resize-module.min.js
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./demo
           publish_branch: gh-pages
+          destination_dir: docs
 
       - name: Run semantic-release
         run: npx semantic-release

@@ -112,12 +112,12 @@
     "node": ">=14.0.0"
   },
   "scripts": {
-    "build": "rollup -c && npm run build:types",
+    "build": "rollup -c && tsc -p tsconfig.json",
     "build:types": "tsc -p tsconfig.json",
     "dev": "rollup -c -w",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "rollup -c && tsc -p tsconfig.json",
     "size": "size-limit",
     "lint": "eslint src test",
     "lint:fix": "eslint src test --fix",
