@@ -1,3 +1,12 @@
+## <small>2.2.1 (2026-08-11)</small>
+
+* Add demo/build testing skill ([b719ec4](https://github.com/BOTOOM/quill-resize-module/commit/b719ec4))
+* Merge pull request #17 from BOTOOM/devin/1786260735-pnpm-compat-demo-deploy ([b271251](https://github.com/BOTOOM/quill-resize-module/commit/b271251)), closes [#17](https://github.com/BOTOOM/quill-resize-module/issues/17)
+* Merge pull request #18 from BOTOOM/devin/update-skills-1786369949 ([cee2cc5](https://github.com/BOTOOM/quill-resize-module/commit/cee2cc5)), closes [#18](https://github.com/BOTOOM/quill-resize-module/issues/18)
+* fix(build): support pnpm installs and deploy the demo where Pages looks ([25b1b74](https://github.com/BOTOOM/quill-resize-module/commit/25b1b74))
+* fix(demo): load CDN fallback dynamically ([41ceb74](https://github.com/BOTOOM/quill-resize-module/commit/41ceb74))
+* fix(demo): pin CDN fallback integrity ([d668aa5](https://github.com/BOTOOM/quill-resize-module/commit/d668aa5))
+
 ## 2.2.0 (2026-07-08)
 
 * Merge pull request #16 from BOTOOM/feat/new-version ([1dcaa14](https://github.com/BOTOOM/quill-resize-module/commit/1dcaa14)), closes [#16](https://github.com/BOTOOM/quill-resize-module/issues/16)
