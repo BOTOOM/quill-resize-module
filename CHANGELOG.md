@@ -1,3 +1,8 @@
+## <small>2.2.2 (2026-08-11)</small>
+
+* Merge pull request #19 from BOTOOM/devin/1786411147-fix-npm-sourcemap-paths ([82627c5](https://github.com/BOTOOM/quill-resize-module/commit/82627c5)), closes [#19](https://github.com/BOTOOM/quill-resize-module/issues/19)
+* fix(build): normalize npm sourcemap paths ([647e460](https://github.com/BOTOOM/quill-resize-module/commit/647e460))
+
 ## <small>2.2.1 (2026-08-11)</small>
 
 * Add demo/build testing skill ([b719ec4](https://github.com/BOTOOM/quill-resize-module/commit/b719ec4))
