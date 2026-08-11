@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quill Resize Module Demo</title>
+    <link
+      crossorigin="anonymous"
+      integrity="sha384-pqra84tv8F7wcaPbFqBHR/ChnRSUD0cU5cvFD0KwzmMdWKvjvLnW5ga3JBDAqyHW"
+      href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.min.css"
+      rel="stylesheet"
+    />
+    <script
+      crossorigin="anonymous"
+      integrity="sha384-reiVBUvj2HgLgCZalqLFSMBVD9LdtiwGyybRGCq2AfP8Rgebz5DxEnwKp4FpagKV"
+      src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.min.js"
+    ></script>
+  </head>
+  <body>
+    <div id="editor">
+      <p>Hello World!</p>
+      <p>Some initial <strong>bold</strong> text</p>
+      <p><br /></p>
+      <iframe class="ql-video" frameborder="0" allowfullscreen="true" src="https://www.youtube.com/embed/duccb_K1seQ?showinfo=0"></iframe>
+
+      <iframe class="ql-video" frameborder="0" allowfullscreen="true" src="https://player.vimeo.com/video/1162811824?h=fc1f557b28"></iframe>
+      <br>
+      <img src="https://images.unsplash.com/photo-1505318926476-0f104f138164?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1074&q=80" alt="">
+    </div>
+  </body>
+  <script>
+    // Releases copy the built bundle here; a fresh clone uses this pinned CDN
+    // fallback. Bump its version and hash when showcasing a newer release.
+    function initializeDemo() {
+      Quill.register("modules/resize", window.QuillResizeModule);
+
+      var toolbarOptions = [
+        "bold",
+        "italic",
+        "underline",
+        "strike",
+        "image",
+        "video"
+      ];
+      var quill = new Quill("#editor", {
+        theme: "snow",
+        modules: {
+          toolbar: toolbarOptions,
+          resize: {
+            showSize: true,
+            // showToolbar: false,
+            toolbar: {
+              // alignTools: false,
+              attributesTool: true,
+            },
+            // Demonstrates the alt/title attributes panel added in the
+            // Media Attributes feature (see README "Media Attributes").
+            locale: {},
+            // Demonstrates the opt-in upload hook: replace this with a real
+            // upload call (e.g. `fetch("/api/upload", { method: "POST", body: formData })`)
+            // to send pasted/dropped images to your own backend instead of
+            // Quill's default base64 inlining. See README "Upload Hooks &
+            // Compression" for details.
+            onImageUpload: async function (file) {
+              return URL.createObjectURL(file);
+            },
+          }
+        }
+      });
+    }
+
+    var resizeScript = document.createElement("script");
+    resizeScript.src = "./quill-resize-module.min.js";
+    resizeScript.onload = initializeDemo;
+    resizeScript.onerror = function () {
+      var fallbackScript = document.createElement("script");
+      fallbackScript.src = "https://cdn.jsdelivr.net/npm/@botom/quill-resize-module@2.2.0/dist/quill-resize-module.min.js";
+      fallbackScript.integrity = "sha384-X1b36yW8B3/nULtrn04emgsUiJQDf0xiCEFdcsbfRrlVujUs82fCCO+/iXr6EV5n";
+      fallbackScript.crossOrigin = "anonymous";
+      fallbackScript.onload = initializeDemo;
+      document.head.appendChild(fallbackScript);
+    };
+    document.head.appendChild(resizeScript);
+  </script>
+</html>
